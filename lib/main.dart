@@ -1,0 +1,26 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:asisten_keuangan/core/theme/app_theme.dart';
+import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
+
+void main() {
+  runApp(
+    const ProviderScope(
+      child: AsistenKeuanganApp(),
+    ),
+  );
+}
+
+class AsistenKeuanganApp extends StatelessWidget {
+  const AsistenKeuanganApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Asisten Keuangan',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const DashboardScreen(),
+    );
+  }
+}

@@ -1,0 +1,463 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:asisten_keuangan/core/theme/app_theme.dart';
+import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
+import 'package:asisten_keuangan/features/assistant/presentation/assistant_chat_screen.dart';
+import 'package:asisten_keuangan/features/assistant/presentation/widgets/quick_assistant_bar.dart';
+import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
+import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
+
+class DashboardScreen extends ConsumerWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final txState = ref.watch(transactionProvider);
+
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundLight,
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'RINGKASAN PORTOFOLIO',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textSecondary,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const Text(
+              'Asisten Keuangan',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AssistantChatScreen(),
+                ),
+              );
+            },
+            icon: const Badge(
+              smallSize: 8,
+              backgroundColor: AppTheme.accentEmerald,
+              child: Icon(Icons.forum_outlined),
+            ),
+            tooltip: 'Ruang Konsultasi Asisten',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Scrollable Content
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Executive Cashflow Card
+                _buildCashflowCard(txState),
+                const SizedBox(height: 16),
+
+                // 2. Budget Absorption Gauge Card
+                _buildBudgetGaugeCard(txState),
+                const SizedBox(height: 24),
+
+                // 3. Recent Transactions Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Mutasi Terakhir',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${txState.transactions.length} Transaksi',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 4. Transaction List
+                if (txState.transactions.isEmpty)
+                  _buildEmptyState()
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: txState.transactions.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final tx = txState.transactions[index];
+                      return _buildTransactionItem(tx);
+                    },
+                  ),
+              ],
+            ),
+          ),
+
+          // Bottom Quick Assistant Bar
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: QuickAssistantBar(
+              onExpandChat: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AssistantChatScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCashflowCard(TransactionState state) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryNavy,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryNavy.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Arus Kas Bersih (Net Cashflow)',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Bulan Ini',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            CurrencyFormatter.format(state.netCashflow),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFlowItem(
+                  label: 'Pemasukan',
+                  amount: state.totalIncome,
+                  color: AppTheme.accentEmerald,
+                  icon: Icons.arrow_downward_rounded,
+                ),
+              ),
+              Container(
+                height: 32,
+                width: 1,
+                color: Colors.white.withValues(alpha: 0.15),
+              ),
+              Expanded(
+                child: _buildFlowItem(
+                  label: 'Pengeluaran',
+                  amount: state.totalExpense,
+                  color: AppTheme.accentRose,
+                  icon: Icons.arrow_upward_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlowItem({
+    required String label,
+    required double amount,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                ),
+                Text(
+                  CurrencyFormatter.formatShort(amount),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetGaugeCard(TransactionState state) {
+    final percentage = (state.budgetUsedPercentage * 100).toInt();
+    final isWarning = percentage >= 80;
+    final isDanger = percentage >= 100;
+
+    final progressColor = isDanger
+        ? AppTheme.accentRose
+        : (isWarning ? AppTheme.accentGold : AppTheme.accentEmerald);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Alokasi Anggaran Bulanan',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              Text(
+                '$percentage% Terpakai',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: progressColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: state.budgetUsedPercentage,
+              minHeight: 10,
+              backgroundColor: const Color(0xFFF1F5F9),
+              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionItem(TransactionModel tx) {
+    final isExpense = tx.type == TransactionType.expense;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isExpense
+                  ? AppTheme.accentRose.withValues(alpha: 0.08)
+                  : AppTheme.accentEmerald.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isExpense
+                  ? Icons.shopping_bag_outlined
+                  : Icons.account_balance_wallet_outlined,
+              color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      '${tx.category} • ${tx.paymentMethod}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildSourceBadge(tx.source),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${isExpense ? '-' : '+'} ${CurrencyFormatter.format(tx.amount)}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSourceBadge(TransactionSource source) {
+    IconData icon;
+    String label;
+    switch (source) {
+      case TransactionSource.voice:
+        icon = Icons.mic;
+        label = 'Voice';
+        break;
+      case TransactionSource.receipt:
+        icon = Icons.receipt;
+        label = 'Struk';
+        break;
+      case TransactionSource.text:
+        icon = Icons.edit_note;
+        label = 'Teks';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: AppTheme.textSecondary),
+          const SizedBox(width: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      alignment: Alignment.center,
+      child: const Text(
+        'Belum ada transaksi. Coba diktekan pada bar asisten di bawah.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+      ),
+    );
+  }
+}
