@@ -7,14 +7,24 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 
 class ManualTransactionBottomSheet extends ConsumerStatefulWidget {
-  const ManualTransactionBottomSheet({super.key});
+  final TransactionModel? initialTransaction;
 
-  static Future<void> show(BuildContext context) {
+  const ManualTransactionBottomSheet({
+    super.key,
+    this.initialTransaction,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    TransactionModel? initialTransaction,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const ManualTransactionBottomSheet(),
+      builder: (_) => ManualTransactionBottomSheet(
+        initialTransaction: initialTransaction,
+      ),
     );
   }
 
@@ -60,6 +70,19 @@ class _ManualTransactionBottomSheetState
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialTransaction;
+    if (initial != null) {
+      _amountController.text = initial.amount.toInt().toString();
+      _titleController.text = initial.title;
+      _selectedType = initial.type;
+      _selectedCategory = initial.category;
+      _selectedPaymentMethod = initial.paymentMethod;
+    }
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     _titleController.dispose();
@@ -86,26 +109,46 @@ class _ManualTransactionBottomSheetState
             : 'Pemasukan $_selectedCategory')
         : _titleController.text.trim();
 
-    final tx = TransactionModel(
-      id: const Uuid().v4(),
-      title: title,
-      amount: amount,
-      type: _selectedType,
-      category: _selectedCategory,
-      paymentMethod: _selectedPaymentMethod,
-      date: DateTime.now(),
-      source: TransactionSource.text,
-    );
+    final initial = widget.initialTransaction;
+    if (initial != null) {
+      final updated = initial.copyWith(
+        title: title,
+        amount: amount,
+        type: _selectedType,
+        category: _selectedCategory,
+        paymentMethod: _selectedPaymentMethod,
+      );
+      ref.read(transactionProvider.notifier).updateTransaction(updated);
+      Navigator.pop(context);
 
-    ref.read(transactionProvider.notifier).addTransaction(tx);
-    Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Perubahan transaksi "$title" berhasil disimpan!'),
+          backgroundColor: AppTheme.accentEmerald,
+        ),
+      );
+    } else {
+      final tx = TransactionModel(
+        id: const Uuid().v4(),
+        title: title,
+        amount: amount,
+        type: _selectedType,
+        category: _selectedCategory,
+        paymentMethod: _selectedPaymentMethod,
+        date: DateTime.now(),
+        source: TransactionSource.text,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Transaksi "$title" berhasil dicatat!'),
-        backgroundColor: AppTheme.accentEmerald,
-      ),
-    );
+      ref.read(transactionProvider.notifier).addTransaction(tx);
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transaksi "$title" berhasil dicatat!'),
+          backgroundColor: AppTheme.accentEmerald,
+        ),
+      );
+    }
   }
 
   @override
@@ -139,21 +182,22 @@ class _ManualTransactionBottomSheetState
             ),
             const SizedBox(height: 16),
 
-            // Header & Close Button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.edit_note_rounded,
                       color: AppTheme.primaryNavy,
                       size: 22,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      'Input Transaksi Manual',
-                      style: TextStyle(
+                      widget.initialTransaction != null
+                          ? 'Edit Transaksi'
+                          : 'Input Transaksi Manual',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.textPrimary,
@@ -326,9 +370,6 @@ class _ManualTransactionBottomSheetState
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Tombol Simpan
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -338,9 +379,11 @@ class _ManualTransactionBottomSheetState
                   backgroundColor: AppTheme.primaryNavy,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text(
-                  'Simpan Transaksi Langsung',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                child: Text(
+                  widget.initialTransaction != null
+                      ? 'Simpan Perubahan'
+                      : 'Simpan Transaksi Langsung',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

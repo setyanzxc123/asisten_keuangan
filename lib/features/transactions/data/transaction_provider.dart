@@ -84,6 +84,20 @@ class TransactionNotifier extends Notifier<TransactionState> {
     );
   }
 
+  void deleteTransaction(String id) {
+    state = state.copyWith(
+      transactions: state.transactions.where((t) => t.id != id).toList(),
+    );
+  }
+
+  void updateTransaction(TransactionModel updatedTransaction) {
+    state = state.copyWith(
+      transactions: state.transactions
+          .map((t) => t.id == updatedTransaction.id ? updatedTransaction : t)
+          .toList(),
+    );
+  }
+
   void updateBudget(double newBudget) {
     state = state.copyWith(monthlyBudget: newBudget);
   }

@@ -88,18 +88,29 @@ class DashboardScreen extends ConsumerWidget {
                 // 3. Reports Banner Card
                 _buildReportsBannerCard(context),
                 const SizedBox(height: 24),
-
-                // 4. Recent Transactions Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Mutasi Terakhir',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mutasi Terakhir',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Geser untuk edit atau hapus',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                     TextButton.icon(
                       onPressed: () =>
@@ -123,8 +134,6 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // 4. Transaction List
                 if (txState.transactions.isEmpty)
                   _buildEmptyState()
                 else
@@ -135,7 +144,7 @@ class DashboardScreen extends ConsumerWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final tx = txState.transactions[index];
-                      return _buildTransactionItem(tx);
+                      return _buildTransactionItem(context, ref, tx);
                     },
                   ),
               ],
@@ -370,73 +379,195 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionItem(TransactionModel tx) {
+  Widget _buildTransactionItem(
+    BuildContext context,
+    WidgetRef ref,
+    TransactionModel tx,
+  ) {
     final isExpense = tx.type == TransactionType.expense;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+    return Dismissible(
+      key: Key('tx_${tx.id}'),
+      background: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryNavy,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.centerLeft,
+        child: const Row(
+          children: [
+            Icon(Icons.edit_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Edit',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isExpense
-                  ? AppTheme.accentRose.withValues(alpha: 0.08)
-                  : AppTheme.accentEmerald.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+      secondaryBackground: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppTheme.accentRose,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.centerRight,
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Hapus',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
             ),
-            child: Icon(
-              isExpense
-                  ? Icons.shopping_bag_outlined
-                  : Icons.account_balance_wallet_outlined,
-              color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+            SizedBox(width: 8),
+            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          ManualTransactionBottomSheet.show(
+            context,
+            initialTransaction: tx,
+          );
+          return false;
+        } else if (direction == DismissDirection.endToStart) {
+          return await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Hapus Transaksi',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              content: Text('Apakah Anda yakin ingin menghapus "${tx.title}"?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(color: AppTheme.textSecondary),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      '${tx.category} • ${tx.paymentMethod}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
-                      ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentRose,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(width: 6),
-                    _buildSourceBadge(tx.source),
-                  ],
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Hapus'),
                 ),
               ],
             ),
-          ),
-          Text(
-            '${isExpense ? '-' : '+'} ${CurrencyFormatter.format(tx.amount)}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+          ) ?? false;
+        }
+        return false;
+      },
+      onDismissed: (direction) {
+        if (direction == DismissDirection.endToStart) {
+          ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Transaksi "${tx.title}" dihapus'),
+              action: SnackBarAction(
+                label: 'Urungkan',
+                textColor: AppTheme.accentGold,
+                onPressed: () {
+                  ref.read(transactionProvider.notifier).addTransaction(tx);
+                },
+              ),
             ),
+          );
+        }
+      },
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          ManualTransactionBottomSheet.show(
+            context,
+            initialTransaction: tx,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
           ),
-        ],
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isExpense
+                      ? AppTheme.accentRose.withValues(alpha: 0.08)
+                      : AppTheme.accentEmerald.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isExpense
+                      ? Icons.shopping_bag_outlined
+                      : Icons.account_balance_wallet_outlined,
+                  color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tx.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          '${tx.category} • ${tx.paymentMethod}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        _buildSourceBadge(tx.source),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${isExpense ? '-' : '+'} ${CurrencyFormatter.format(tx.amount)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
