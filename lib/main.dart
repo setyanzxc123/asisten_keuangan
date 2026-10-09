@@ -1,9 +1,21 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:asisten_keuangan/firebase_options.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
 import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e, stackTrace) {
+    developer.log('Firebase initialization warning: $e', stackTrace: stackTrace);
+  }
+
   runApp(
     const ProviderScope(
       child: AsistenKeuanganApp(),
