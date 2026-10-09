@@ -102,7 +102,7 @@ class _ManualTransactionBottomSheetState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Transaksi "$title" berhasil dicatat secara offline!'),
+        content: Text('Transaksi "$title" berhasil dicatat!'),
         backgroundColor: AppTheme.accentEmerald,
       ),
     );

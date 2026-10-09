@@ -133,12 +133,12 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                 ),
                 const SizedBox(width: 4),
 
-                // Manual Input Button (Offline Fallback)
+                // Manual Input Button
                 IconButton(
                   onPressed: () => ManualTransactionBottomSheet.show(context),
                   icon: const Icon(Icons.add_circle_outline_rounded),
                   color: AppTheme.primaryNavy,
-                  tooltip: 'Input Manual (Offline)',
+                  tooltip: 'Catat Manual',
                 ),
                 const SizedBox(width: 4),
 
