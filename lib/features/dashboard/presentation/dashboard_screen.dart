@@ -8,6 +8,7 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
+import 'package:asisten_keuangan/core/services/biometric_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -66,7 +67,40 @@ class DashboardScreen extends ConsumerWidget {
             ),
             tooltip: 'Ruang Konsultasi Asisten',
           ),
-          const SizedBox(width: 8),
+          IconButton(
+            tooltip: 'Kunci Biometrik',
+            icon: const Icon(Icons.fingerprint_rounded),
+            onPressed: () async {
+              final bioService = ref.read(biometricServiceProvider);
+              final isAvailable = await bioService.isBiometricAvailable();
+              if (!context.mounted) return;
+
+              if (!isAvailable) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Sensor biometrik tidak aktif atau tidak didukung di perangkat ini.',
+                    ),
+                    backgroundColor: AppTheme.accentRose,
+                  ),
+                );
+                return;
+              }
+
+              final success = await bioService.authenticate();
+              if (!context.mounted) return;
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Verifikasi biometrik berhasil.'),
+                    backgroundColor: AppTheme.accentEmerald,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Stack(

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
 import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
+import 'package:asisten_keuangan/core/services/csv_export_service.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 
@@ -63,6 +65,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Ekspor CSV',
+            icon: const Icon(Icons.file_download_outlined, color: AppTheme.primaryNavy),
+            onPressed: () => _handleExportCsv(context, txState.transactions),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -103,6 +113,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               avgDailyExpense: avgDailyExpense,
               transactionCount: txState.transactions.length,
             ),
+            const SizedBox(height: 20),
+            _buildExportSection(context, txState.transactions),
             const SizedBox(height: 32),
           ],
         ),
@@ -527,6 +539,167 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExportSection(
+    BuildContext context,
+    List<TransactionModel> transactions,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ekspor & Arsip Keuangan',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Unduh rekapan mutasi transaksi dalam format CSV standar (RFC 4180) untuk pembukuan eksternal.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () => _handleExportCsv(context, transactions),
+              icon: const Icon(Icons.file_download_outlined, size: 18),
+              label: const Text(
+                'Ekspor Riwayat Mutasi (.CSV)',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryNavy,
+                side: const BorderSide(color: AppTheme.primaryNavy),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleExportCsv(
+    BuildContext context,
+    List<TransactionModel> transactions,
+  ) {
+    const exporter = CsvExportService();
+    final csvData = exporter.generateCsv(transactions);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.table_chart_rounded, color: AppTheme.primaryNavy),
+                    SizedBox(width: 8),
+                    Text(
+                      'Pratinjau Ekspor CSV',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Total ${transactions.length} mutasi berhasil diformat ke CSV.',
+              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 150,
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  csvData,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: csvData));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Data CSV berhasil disalin ke clipboard!'),
+                      backgroundColor: AppTheme.accentEmerald,
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primaryNavy,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: const Text(
+                  'Salin Berkas CSV',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
