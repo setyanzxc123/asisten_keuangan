@@ -7,6 +7,7 @@ import 'package:asisten_keuangan/features/assistant/presentation/widgets/quick_a
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
+import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -100,11 +101,23 @@ class DashboardScreen extends ConsumerWidget {
                         color: AppTheme.textPrimary,
                       ),
                     ),
-                    Text(
-                      '${txState.transactions.length} Transaksi',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
+                    TextButton.icon(
+                      onPressed: () =>
+                          ManualTransactionBottomSheet.show(context),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text(
+                        'Input Manual',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryNavy,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                       ),
                     ),
                   ],

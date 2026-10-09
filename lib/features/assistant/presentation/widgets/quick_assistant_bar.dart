@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
 import 'package:asisten_keuangan/features/assistant/data/assistant_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
+import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 
 class QuickAssistantBar extends ConsumerStatefulWidget {
   final VoidCallback onExpandChat;
@@ -130,7 +131,16 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
+
+                // Manual Input Button (Offline Fallback)
+                IconButton(
+                  onPressed: () => ManualTransactionBottomSheet.show(context),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  color: AppTheme.primaryNavy,
+                  tooltip: 'Input Manual (Offline)',
+                ),
+                const SizedBox(width: 4),
 
                 // Text Input Bar
                 Expanded(
