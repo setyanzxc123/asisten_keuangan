@@ -6,6 +6,7 @@ import 'package:asisten_keuangan/features/assistant/presentation/assistant_chat_
 import 'package:asisten_keuangan/features/assistant/presentation/widgets/quick_assistant_bar.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
+import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -41,6 +42,18 @@ class DashboardScreen extends ConsumerWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+                  builder: (_) => const ReportsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.pie_chart_outline_rounded),
+            tooltip: 'Laporan Eksekutif',
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
                   builder: (_) => const AssistantChatScreen(),
                 ),
               );
@@ -69,9 +82,13 @@ class DashboardScreen extends ConsumerWidget {
 
                 // 2. Budget Absorption Gauge Card
                 _buildBudgetGaugeCard(txState),
+                const SizedBox(height: 16),
+
+                // 3. Reports Banner Card
+                _buildReportsBannerCard(context),
                 const SizedBox(height: 24),
 
-                // 3. Recent Transactions Header
+                // 4. Recent Transactions Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -445,6 +462,71 @@ class DashboardScreen extends ConsumerWidget {
             style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReportsBannerCard(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ReportsScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryNavy.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.pie_chart_rounded,
+                color: AppTheme.primaryNavy,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Laporan Eksekutif & Analisis',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Komposisi pengeluaran & rekomendasi AI',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ],
+        ),
       ),
     );
   }
