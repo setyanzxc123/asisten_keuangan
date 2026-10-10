@@ -34,6 +34,8 @@ class AsistenKeuanganApp extends StatelessWidget {
       title: 'Asisten Keuangan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const DashboardScreen(),
     );
   }
