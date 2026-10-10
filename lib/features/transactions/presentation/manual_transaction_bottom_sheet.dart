@@ -208,8 +208,9 @@ class _ManualTransactionBottomSheetState
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(10),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  tooltip: 'Tutup',
                 ),
               ],
             ),
@@ -218,7 +219,7 @@ class _ManualTransactionBottomSheetState
             // Segmented Button: Pengeluaran vs Pemasukan
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: AppTheme.neutralSurfaceAlt,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -234,7 +235,7 @@ class _ManualTransactionBottomSheetState
                     child: _buildTypeSegment(
                       title: 'Pemasukan',
                       type: TransactionType.income,
-                      activeColor: AppTheme.accentEmerald,
+                      activeColor: AppTheme.accentEmeraldText,
                     ),
                   ),
                 ],
