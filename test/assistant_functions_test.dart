@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/core/services/financial_functions_service.dart';
@@ -8,6 +10,22 @@ import 'package:asisten_keuangan/features/transactions/data/firestore_transactio
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_repository.dart';
+
+class MockHttpClient extends http.BaseClient {
+  final Future<http.Response> Function(http.BaseRequest request) handler;
+
+  MockHttpClient(this.handler);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final response = await handler(request);
+    return http.StreamedResponse(
+      Stream.value(response.bodyBytes),
+      response.statusCode,
+      headers: response.headers,
+    );
+  }
+}
 
 class FakeTransactionRepository implements TransactionRepository {
   final Map<String, List<TransactionModel>> _storage = {};
@@ -111,6 +129,159 @@ void main() {
     test('FinancialFunctionsService handles uninitialized Firebase gracefully', () async {
       final service = FinancialFunctionsService();
       final result = await service.processFinancialIntent(text: 'test intent');
+      expect(result, isNull);
+    });
+  });
+
+  group('Direct Gemini Client (Spark Plan Mode) Tests', () {
+    test('direct call parses successful gemini json payload accurately', () async {
+      final mockClient = MockHttpClient((request) async {
+        expect(request.url.toString(), contains('models/gemini-2.5-flash:generateContent'));
+        expect(request.url.queryParameters['key'], equals('test-spark-key'));
+
+        final body = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'text': jsonEncode({
+                      'intent': 'RECORD_TRANSACTION',
+                      'isClarificationNeeded': false,
+                      'bankerNarrative': 'Makan siang sebesar Rp 35.000 telah kami bukukan.',
+                      'transaction': {
+                        'title': 'Makan Siang',
+                        'amount': 35000,
+                        'type': 'EXPENSE',
+                        'category': 'Makanan & Minuman',
+                        'paymentMethod': 'QRIS',
+                      },
+                    })
+                  }
+                ]
+              }
+            }
+          ]
+        });
+
+        return http.Response(body, 200, headers: {'content-type': 'application/json'});
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.processFinancialIntent(text: 'makan siang 35rb qris');
+      expect(result, isNotNull);
+      expect(result!.intent, equals('RECORD_TRANSACTION'));
+      expect(result.transaction?['title'], equals('Makan Siang'));
+      expect(result.transaction?['amount'], equals(35000));
+      expect(result.bankerNarrative, equals('Makan siang sebesar Rp 35.000 telah kami bukukan.'));
+    });
+
+    test('direct call parses markdown code-fenced json response', () async {
+      final mockClient = MockHttpClient((request) async {
+        final innerJson = jsonEncode({
+          'intent': 'RECORD_TRANSACTION',
+          'isClarificationNeeded': false,
+          'bankerNarrative': 'Pembelian bensin dibukukan.',
+          'transaction': {
+            'title': 'Bensin',
+            'amount': 50000,
+            'type': 'EXPENSE',
+            'category': 'Transportasi',
+            'paymentMethod': 'Tunai',
+          },
+        });
+
+        final body = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': '```json\n$innerJson\n```'}
+                ]
+              }
+            }
+          ]
+        });
+
+        return http.Response(body, 200, headers: {'content-type': 'application/json'});
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.processFinancialIntent(text: 'beli bensin 50rb tunai');
+      expect(result, isNotNull);
+      expect(result!.transaction?['title'], equals('Bensin'));
+      expect(result.transaction?['amount'], equals(50000));
+    });
+
+    test('direct call handles multimodal input in request body', () async {
+      late Map<String, dynamic> capturedBody;
+      final mockClient = MockHttpClient((request) async {
+        final req = request as http.Request;
+        capturedBody = jsonDecode(req.body) as Map<String, dynamic>;
+
+        final body = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'text': jsonEncode({
+                      'intent': 'RECORD_TRANSACTION',
+                      'isClarificationNeeded': false,
+                      'bankerNarrative': 'Foto struk berhasil diproses.',
+                      'transaction': {
+                        'title': 'Supermarket',
+                        'amount': 120000,
+                        'type': 'EXPENSE',
+                        'category': 'Belanja',
+                        'paymentMethod': 'Kartu Debit',
+                      },
+                    })
+                  }
+                ]
+              }
+            }
+          ]
+        });
+
+        return http.Response(body, 200, headers: {'content-type': 'application/json'});
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.processFinancialIntent(
+        mediaBase64: 'fake-base64-image-bytes',
+        mimeType: 'image/jpeg',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.transaction?['amount'], equals(120000));
+      expect(capturedBody['contents'][0]['parts'].length, equals(2));
+      expect(capturedBody['contents'][0]['parts'][0]['inline_data']['mime_type'], equals('image/jpeg'));
+    });
+
+    test('direct call handles http error gracefully', () async {
+      final mockClient = MockHttpClient((request) async {
+        return http.Response('Server Error', 500);
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.processFinancialIntent(text: 'test failure');
       expect(result, isNull);
     });
   });
