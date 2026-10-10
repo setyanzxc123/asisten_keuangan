@@ -48,4 +48,39 @@ class TransactionModel {
       notes: notes ?? this.notes,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'type': type.name,
+      'category': category,
+      'paymentMethod': paymentMethod,
+      'date': date.toIso8601String(),
+      'source': source.name,
+      'notes': notes,
+    };
+  }
+
+  factory TransactionModel.fromMap(Map<String, dynamic> map, [String? id]) {
+    return TransactionModel(
+      id: id ?? map['id'] as String? ?? '',
+      title: map['title'] as String? ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      type: (map['type'] == 'income')
+          ? TransactionType.income
+          : TransactionType.expense,
+      category: map['category'] as String? ?? 'Lainnya',
+      paymentMethod: map['paymentMethod'] as String? ?? 'Tunai',
+      date: map['date'] != null
+          ? DateTime.tryParse(map['date'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      source: TransactionSource.values.firstWhere(
+        (s) => s.name == map['source'],
+        orElse: () => TransactionSource.text,
+      ),
+      notes: map['notes'] as String?,
+    );
+  }
 }
