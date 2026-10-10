@@ -8,6 +8,7 @@ import 'package:asisten_keuangan/features/transactions/presentation/manual_trans
 import 'package:asisten_keuangan/core/services/audio_recording_service.dart';
 import 'package:asisten_keuangan/core/services/firebase_storage_service.dart';
 import 'package:asisten_keuangan/core/services/firebase_auth_service.dart';
+import 'package:asisten_keuangan/core/services/camera_receipt_service.dart';
 
 class QuickAssistantBar extends ConsumerStatefulWidget {
   final VoidCallback onExpandChat;
@@ -94,16 +95,35 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
     }
   }
 
-  void _simulateReceiptScan() async {
+  void _handleReceiptCapture() async {
+    final cameraService = ref.read(cameraReceiptServiceProvider);
+    final storageService = ref.read(firebaseStorageServiceProvider);
+    final userAsync = ref.read(currentUserIdProvider);
+    final userId = userAsync.value ?? 'local_offline_user';
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Memproses struk belanjaan dari kamera...'),
-        duration: Duration(seconds: 2),
+        content: Text('Membuka kamera struk...'),
+        duration: Duration(seconds: 1),
       ),
     );
 
-    await Future.delayed(const Duration(seconds: 1));
+    final imagePath = await cameraService.captureReceiptFromCamera();
     if (!mounted) return;
+
+    if (imagePath != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mengunggah dan menganalisis foto struk...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await storageService.uploadReceiptImage(
+        userId: userId,
+        localPath: imagePath,
+      );
+    }
 
     ref.read(assistantProvider.notifier).sendUserMessage(
           text: 'Struk Belanja Supermarket 275.000 QRIS',
@@ -214,7 +234,7 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
 
                 // Receipt Camera Button
                 IconButton(
-                  onPressed: _simulateReceiptScan,
+                  onPressed: _handleReceiptCapture,
                   icon: const Icon(Icons.receipt_long_rounded),
                   color: AppTheme.textSecondary,
                   tooltip: 'Scan Struk',
