@@ -85,57 +85,62 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Period Filter Chips
-            Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPeriodChip('Minggu Ini'),
-                const SizedBox(width: 8),
-                _buildPeriodChip('Bulan Ini'),
-                const SizedBox(width: 8),
-                _buildPeriodChip('Kuartal Ini'),
+                // Period Filter Chips
+                Row(
+                  children: [
+                    _buildPeriodChip('Minggu Ini'),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('Bulan Ini'),
+                    const SizedBox(width: 8),
+                    _buildPeriodChip('Kuartal Ini'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Advisory Style Chip Selector
+                const AdvisoryChipSelector(),
+                const SizedBox(height: 16),
+
+                // 1. Executive Summary Card (Private Wealth Banker Insights)
+                _buildBankerExecutiveCard(
+                  savingsRate: savingsRate.toDouble(),
+                  totalIncome: totalIncome,
+                  totalExpense: totalExpense,
+                  categoryTotals: categoryTotals,
+                ),
+                const SizedBox(height: 24),
+
+                // Target Impian & Wishlist Section
+                const WishlistSectionWidget(),
+                const SizedBox(height: 20),
+
+                // 2. Category Expense Breakdown (Pie / Donut Chart)
+                _buildCategoryBreakdownCard(
+                  categoryTotals: categoryTotals,
+                  totalExpense: totalExpense,
+                ),
+                const SizedBox(height: 20),
+
+                // 3. Key Financial Ratios Card
+                _buildFinancialRatiosCard(
+                  savingsRate: savingsRate.toDouble(),
+                  avgDailyExpense: avgDailyExpense,
+                  transactionCount: txState.transactions.length,
+                ),
+                const SizedBox(height: 20),
+                _buildExportSection(context, txState.transactions),
+                const SizedBox(height: 32),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Advisory Style Chip Selector
-            const AdvisoryChipSelector(),
-            const SizedBox(height: 16),
-
-            // 1. Executive Summary Card (Private Wealth Banker Insights)
-            _buildBankerExecutiveCard(
-              savingsRate: savingsRate.toDouble(),
-              totalIncome: totalIncome,
-              totalExpense: totalExpense,
-              categoryTotals: categoryTotals,
-            ),
-            const SizedBox(height: 24),
-
-            // Target Impian & Wishlist Section
-            const WishlistSectionWidget(),
-            const SizedBox(height: 20),
-
-            // 2. Category Expense Breakdown (Pie / Donut Chart)
-            _buildCategoryBreakdownCard(
-              categoryTotals: categoryTotals,
-              totalExpense: totalExpense,
-            ),
-            const SizedBox(height: 20),
-
-            // 3. Key Financial Ratios Card
-            _buildFinancialRatiosCard(
-              savingsRate: savingsRate.toDouble(),
-              avgDailyExpense: avgDailyExpense,
-              transactionCount: txState.transactions.length,
-            ),
-            const SizedBox(height: 20),
-            _buildExportSection(context, txState.transactions),
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );
@@ -181,23 +186,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     final isHealthy = savingsRate >= 30;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryNavy,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryNavy.withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Semantics(
+      container: true,
+      label:
+          'Ringkasan eksekutif penasihat perbankan: Rasio tabungan ${savingsRate.toStringAsFixed(1)}%, total pemasukan ${CurrencyFormatter.format(totalIncome)}, total pengeluaran ${CurrencyFormatter.format(totalExpense)}.',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryNavy,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryNavy.withValues(alpha: 0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -238,9 +247,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               else
                 IconButton(
                   tooltip: 'Segarkan Analisis AI',
-                  icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white70),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.white70),
+                  padding: const EdgeInsets.all(10),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                   onPressed: () {
                     ref.read(monthlyAiAnalysisProvider.notifier).generateAnalysis();
                   },
@@ -346,6 +355,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -393,14 +403,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Alokasi Pengeluaran per Kategori',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+              const Expanded(
+                child: Text(
+                  'Alokasi Pengeluaran per Kategori',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 'Total: ${CurrencyFormatter.formatShort(totalExpense)}',
                 style: const TextStyle(
@@ -438,19 +451,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 sections: List.generate(entries.length, (i) {
                   final isTouched = i == _touchedIndex;
                   final amt = entries[i].value;
-                  final percentage = totalExpense > 0
-                      ? ((amt / totalExpense) * 100).toStringAsFixed(0)
-                      : '0';
+                  final pctVal = totalExpense > 0 ? (amt / totalExpense) * 100 : 0.0;
+                  final percentage = pctVal.toStringAsFixed(0);
+                  final sliceColor = colors[i % colors.length];
+                  final isLightSlice =
+                      ThemeData.estimateBrightnessForColor(sliceColor) == Brightness.light;
+                  final shouldShowTitle = pctVal >= 6.0;
 
                   return PieChartSectionData(
-                    color: colors[i % colors.length],
+                    color: sliceColor,
                     value: amt,
-                    title: '$percentage%',
+                    title: shouldShowTitle ? '$percentage%' : '',
                     radius: isTouched ? 36.0 : 30.0,
-                    titleStyle: const TextStyle(
+                    titleStyle: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: isLightSlice ? AppTheme.primaryNavy : Colors.white,
                     ),
                   );
                 }),

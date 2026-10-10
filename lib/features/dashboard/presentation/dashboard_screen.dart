@@ -7,6 +7,7 @@ import 'package:asisten_keuangan/features/assistant/presentation/widgets/quick_a
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
+import 'package:asisten_keuangan/features/reports/presentation/widgets/wishlist_section_widget.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 import 'package:asisten_keuangan/core/services/biometric_service.dart';
 import 'package:asisten_keuangan/core/services/network_connectivity_service.dart';
@@ -108,39 +109,42 @@ class DashboardScreen extends ConsumerWidget {
       body: Stack(
         children: [
           // Scrollable Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!isOnline) ...[
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFED7AA)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.cloud_off_rounded, size: 18, color: Color(0xFFC2410C)),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Mode Offline Aktif - Transaksi disimpan aman di penyimpanan lokal.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFC2410C),
-                            ),
-                          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isOnline) ...[
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.warningBackground,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.warningBorder),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                        child: const Row(
+                          children: [
+                            Icon(Icons.cloud_off_rounded, size: 18, color: AppTheme.warningText),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Mode Offline Aktif - Transaksi disimpan aman di penyimpanan lokal.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.warningText,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                 // 1. Executive Cashflow Card
                 _buildCashflowCard(txState),
                 const SizedBox(height: 16),
@@ -151,7 +155,11 @@ class DashboardScreen extends ConsumerWidget {
 
                 // 3. Reports Banner Card
                 _buildReportsBannerCard(context),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+
+                // 4. Savings Targets & Wishlist
+                const WishlistSectionWidget(),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -204,7 +212,9 @@ class DashboardScreen extends ConsumerWidget {
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: txState.transactions.length,
+                    itemCount: txState.transactions.length > 15
+                        ? 15
+                        : txState.transactions.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final tx = txState.transactions[index];
@@ -214,21 +224,28 @@ class DashboardScreen extends ConsumerWidget {
               ],
             ),
           ),
+        ),
+      ),
 
           // Bottom Quick Assistant Bar
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: QuickAssistantBar(
-              onExpandChat: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AssistantChatScreen(),
-                  ),
-                );
-              },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: QuickAssistantBar(
+                  onExpandChat: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AssistantChatScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
         ],
@@ -237,88 +254,93 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildCashflowCard(TransactionState state) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryNavy,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryNavy.withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Arus Kas Bersih (Net Cashflow)',
-                style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Bulan Ini',
+    return Semantics(
+      container: true,
+      label:
+          'Arus kas bersih bulan ini: ${CurrencyFormatter.format(state.netCashflow)}. Pemasukan: ${CurrencyFormatter.format(state.totalIncome)}, Pengeluaran: ${CurrencyFormatter.format(state.totalExpense)}.',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryNavy,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryNavy.withValues(alpha: 0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Arus Kas Bersih (Net Cashflow)',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            CurrencyFormatter.format(state.netCashflow),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Bulan Ini',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildFlowItem(
-                  label: 'Pemasukan',
-                  amount: state.totalIncome,
-                  color: AppTheme.accentEmerald,
-                  icon: Icons.arrow_downward_rounded,
+            const SizedBox(height: 8),
+            Text(
+              CurrencyFormatter.format(state.netCashflow),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildFlowItem(
+                    label: 'Pemasukan',
+                    amount: state.totalIncome,
+                    color: AppTheme.accentEmerald,
+                    icon: Icons.arrow_downward_rounded,
+                  ),
                 ),
-              ),
-              Container(
-                height: 32,
-                width: 1,
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
-              Expanded(
-                child: _buildFlowItem(
-                  label: 'Pengeluaran',
-                  amount: state.totalExpense,
-                  color: AppTheme.accentRose,
-                  icon: Icons.arrow_upward_rounded,
+                Container(
+                  height: 32,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: _buildFlowItem(
+                    label: 'Pengeluaran',
+                    amount: state.totalExpense,
+                    color: AppTheme.accentRose,
+                    icon: Icons.arrow_upward_rounded,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -376,69 +398,74 @@ class DashboardScreen extends ConsumerWidget {
         ? AppTheme.accentRose
         : (isWarning ? AppTheme.accentGold : AppTheme.accentEmerald);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Alokasi Anggaran Bulanan',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+    return Semantics(
+      container: true,
+      label:
+          'Alokasi anggaran bulanan: $percentage% terpakai. Sisa anggaran: ${CurrencyFormatter.format(state.remainingBudget)} dari target ${CurrencyFormatter.format(state.monthlyBudget)}.',
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Alokasi Anggaran Bulanan',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-              ),
-              Text(
-                '$percentage% Terpakai',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: progressColor,
+                Text(
+                  '$percentage% Terpakai',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: progressColor,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: state.budgetUsedPercentage,
-              minHeight: 10,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: state.budgetUsedPercentage,
+                minHeight: 10,
+                backgroundColor: const Color(0xFFF1F5F9),
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               ),
-              Text(
-                'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -607,11 +634,14 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Text(
-                          '${tx.category} • ${tx.paymentMethod}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
+                        Flexible(
+                          child: Text(
+                            '${tx.category} • ${tx.paymentMethod}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -626,7 +656,7 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: isExpense ? AppTheme.accentRose : AppTheme.accentEmerald,
+                  color: isExpense ? AppTheme.accentRose : AppTheme.accentEmeraldText,
                 ),
               ),
             ],
