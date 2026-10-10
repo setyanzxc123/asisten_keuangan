@@ -73,7 +73,12 @@ class FakeSuccessFunctionsService extends FinancialFunctionsService {
   FakeSuccessFunctionsService(this.result);
 
   @override
-  Future<FinancialIntentResult?> processFinancialIntent(String text) async {
+  Future<FinancialIntentResult?> processFinancialIntent({
+    String? text,
+    String? storagePath,
+    String? mediaBase64,
+    String? mimeType,
+  }) async {
     return result;
   }
 }
@@ -105,7 +110,7 @@ void main() {
 
     test('FinancialFunctionsService handles uninitialized Firebase gracefully', () async {
       final service = FinancialFunctionsService();
-      final result = await service.processFinancialIntent('test intent');
+      final result = await service.processFinancialIntent(text: 'test intent');
       expect(result, isNull);
     });
   });

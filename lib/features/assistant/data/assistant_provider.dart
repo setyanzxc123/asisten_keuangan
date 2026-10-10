@@ -59,6 +59,8 @@ class AssistantNotifier extends Notifier<AssistantState> {
   Future<void> sendUserMessage({
     required String text,
     TransactionSource source = TransactionSource.text,
+    String? storagePath,
+    String? mimeType,
   }) async {
     final userMsg = ChatMessage(
       id: _uuid.v4(),
@@ -78,7 +80,11 @@ class AssistantNotifier extends Notifier<AssistantState> {
     }
 
     final functionsService = ref.read(financialFunctionsServiceProvider);
-    final cloudResult = await functionsService.processFinancialIntent(text);
+    final cloudResult = await functionsService.processFinancialIntent(
+      text: text,
+      storagePath: storagePath,
+      mimeType: mimeType,
+    );
 
     if (cloudResult != null) {
       _applyCloudIntentResult(cloudResult, source);

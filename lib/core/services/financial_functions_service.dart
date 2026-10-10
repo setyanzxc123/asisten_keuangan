@@ -42,7 +42,12 @@ class FinancialFunctionsService {
     }
   }
 
-  Future<FinancialIntentResult?> processFinancialIntent(String text) async {
+  Future<FinancialIntentResult?> processFinancialIntent({
+    String? text,
+    String? storagePath,
+    String? mediaBase64,
+    String? mimeType,
+  }) async {
     final functions = _functions ?? _resolveFunctionsInstance();
     if (functions == null) {
       return null;
@@ -50,9 +55,13 @@ class FinancialFunctionsService {
 
     try {
       final callable = functions.httpsCallable('processFinancialIntent');
-      final response = await callable.call<Map<String, dynamic>>({
-        'text': text,
-      });
+      final payload = <String, dynamic>{};
+      if (text != null && text.isNotEmpty) payload['text'] = text;
+      if (storagePath != null && storagePath.isNotEmpty) payload['storagePath'] = storagePath;
+      if (mediaBase64 != null && mediaBase64.isNotEmpty) payload['mediaBase64'] = mediaBase64;
+      if (mimeType != null && mimeType.isNotEmpty) payload['mimeType'] = mimeType;
+
+      final response = await callable.call<Map<String, dynamic>>(payload);
 
       final body = response.data;
       if (body['success'] == true && body['data'] != null) {

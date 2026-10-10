@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { financialResponseSchema, FinancialIntentResponse } from "../src/schemas/financial_schema";
 import { createGeminiClient } from "../src/index";
+import { MediaInput } from "../src/services/gemini_service";
 
 test("financialResponseSchema contains mandatory fields and properties", () => {
   assert.ok(financialResponseSchema.properties);
@@ -37,6 +38,20 @@ test("simulated JSON response parses accurately as FinancialIntentResponse", () 
   assert.ok(parsed.transaction);
   assert.equal(parsed.transaction.amount, 150000);
   assert.equal(parsed.transaction.type, "EXPENSE");
+});
+
+test("MediaInput correctly types audio and receipt image inputs", () => {
+  const audioInput: MediaInput = {
+    mimeType: "audio/m4a",
+    data: "AAAA==",
+  };
+  assert.equal(audioInput.mimeType, "audio/m4a");
+
+  const imageInput: MediaInput = {
+    mimeType: "image/jpeg",
+    data: "/9j/4AAQSkZJRg==",
+  };
+  assert.equal(imageInput.mimeType, "image/jpeg");
 });
 
 test("createGeminiClient throws HttpsError when apiKey is missing", () => {
