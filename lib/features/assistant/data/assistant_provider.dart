@@ -4,6 +4,11 @@ import 'package:asisten_keuangan/features/assistant/domain/chat_message.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
+import 'package:asisten_keuangan/core/services/financial_functions_service.dart';
+
+final financialFunctionsServiceProvider = Provider<FinancialFunctionsService>((ref) {
+  return FinancialFunctionsService();
+});
 
 class AssistantState {
   final List<ChatMessage> messages;
@@ -67,16 +72,90 @@ class AssistantNotifier extends Notifier<AssistantState> {
       isThinking: true,
     );
 
-    // Simulasi jeda pemrosesan analitis cerdas (AI thinking latency)
-    await Future.delayed(const Duration(milliseconds: 900));
-
-    // Handle ongoing multi-turn clarification if pending
     if (state.pendingTransaction != null) {
       _resolvePendingClarification(text);
       return;
     }
 
+    final functionsService = ref.read(financialFunctionsServiceProvider);
+    final cloudResult = await functionsService.processFinancialIntent(text);
+
+    if (cloudResult != null) {
+      _applyCloudIntentResult(cloudResult, source);
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 300));
     _processNewTransactionInput(text, source);
+  }
+
+  void _applyCloudIntentResult(
+    FinancialIntentResult result,
+    TransactionSource source,
+  ) {
+    if (result.intent == 'RECORD_TRANSACTION' && result.transaction != null) {
+      final txData = result.transaction!;
+      final title = (txData['title'] as String?) ?? 'Transaksi';
+      final amount = ((txData['amount'] as num?) ?? 0).toDouble();
+      final isIncome = (txData['type'] as String?)?.toUpperCase() == 'INCOME';
+      final category = (txData['category'] as String?) ?? (isIncome ? 'Pendapatan' : 'Lainnya');
+      final paymentMethod = (txData['paymentMethod'] as String?) ?? 'Debit';
+
+      final tx = TransactionModel(
+        id: _uuid.v4(),
+        title: title,
+        amount: amount,
+        type: isIncome ? TransactionType.income : TransactionType.expense,
+        category: category,
+        paymentMethod: paymentMethod,
+        date: DateTime.now(),
+        source: source,
+      );
+
+      if (result.isClarificationNeeded) {
+        final clarificationMsg = ChatMessage(
+          id: _uuid.v4(),
+          sender: MessageSender.banker,
+          content: result.clarificationQuestion ?? result.bankerNarrative,
+          timestamp: DateTime.now(),
+          status: MessageStatus.pendingClarification,
+          extractedTransaction: tx,
+        );
+        state = state.copyWith(
+          messages: [...state.messages, clarificationMsg],
+          isThinking: false,
+          pendingTransaction: tx,
+        );
+        return;
+      }
+
+      ref.read(transactionProvider.notifier).addTransaction(tx);
+      final committedMsg = ChatMessage(
+        id: _uuid.v4(),
+        sender: MessageSender.banker,
+        content: result.bankerNarrative,
+        timestamp: DateTime.now(),
+        status: MessageStatus.committed,
+        extractedTransaction: tx,
+      );
+      state = state.copyWith(
+        messages: [...state.messages, committedMsg],
+        isThinking: false,
+      );
+      return;
+    }
+
+    final bankerResponse = ChatMessage(
+      id: _uuid.v4(),
+      sender: MessageSender.banker,
+      content: result.bankerNarrative,
+      timestamp: DateTime.now(),
+      status: MessageStatus.normal,
+    );
+    state = state.copyWith(
+      messages: [...state.messages, bankerResponse],
+      isThinking: false,
+    );
   }
 
   void _resolvePendingClarification(String userResponse) {
@@ -94,7 +173,6 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
     final finalTx = pending.copyWith(paymentMethod: paymentMethod);
 
-    // Commit to transaction repository
     ref.read(transactionProvider.notifier).addTransaction(finalTx);
 
     final txState = ref.read(transactionProvider);

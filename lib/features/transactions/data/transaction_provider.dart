@@ -54,6 +54,10 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
     _syncFromRepository();
 
+    if (stateOrNull != null) {
+      return stateOrNull!;
+    }
+
     return TransactionState(
       transactions: [
         TransactionModel(
@@ -95,14 +99,18 @@ class TransactionNotifier extends Notifier<TransactionState> {
     final uid = _userId;
     if (repo == null || uid == null) return;
 
-    repo.watchTransactions(uid).listen((cloudTransactions) {
-      if (cloudTransactions.isNotEmpty) {
+    final sub = repo.watchTransactions(uid).listen((cloudTransactions) {
+      if (ref.mounted && cloudTransactions.isNotEmpty) {
         state = state.copyWith(transactions: cloudTransactions);
       }
     });
 
+    ref.onDispose(() {
+      sub.cancel();
+    });
+
     repo.getMonthlyBudget(uid).then((budget) {
-      if (budget > 0) {
+      if (ref.mounted && budget > 0) {
         state = state.copyWith(monthlyBudget: budget);
       }
     });
