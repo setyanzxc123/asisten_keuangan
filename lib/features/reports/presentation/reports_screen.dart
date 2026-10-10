@@ -7,6 +7,9 @@ import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
 import 'package:asisten_keuangan/core/services/csv_export_service.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
+import 'package:asisten_keuangan/features/reports/presentation/widgets/advisory_chip_selector.dart';
+import 'package:asisten_keuangan/features/reports/presentation/widgets/wishlist_section_widget.dart';
+import 'package:asisten_keuangan/features/reports/data/monthly_ai_analysis_provider.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -18,6 +21,14 @@ class ReportsScreen extends ConsumerStatefulWidget {
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _touchedIndex = -1;
   String _selectedPeriod = 'Bulan Ini';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(monthlyAiAnalysisProvider.notifier).generateAnalysis();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +102,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Advisory Style Chip Selector
+            const AdvisoryChipSelector(),
+            const SizedBox(height: 16),
+
             // 1. Executive Summary Card (Private Wealth Banker Insights)
             _buildBankerExecutiveCard(
               savingsRate: savingsRate.toDouble(),
@@ -98,6 +113,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               totalExpense: totalExpense,
               categoryTotals: categoryTotals,
             ),
+            const SizedBox(height: 24),
+
+            // Target Impian & Wishlist Section
+            const WishlistSectionWidget(),
             const SizedBox(height: 20),
 
             // 2. Category Expense Breakdown (Pie / Donut Chart)
@@ -147,6 +166,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required double totalExpense,
     required Map<String, double> categoryTotals,
   }) {
+    final aiState = ref.watch(monthlyAiAnalysisProvider);
+    final aiResult = aiState.result;
+
     // Determine Top Category
     String topCategory = 'Operasional';
     double topCategoryAmount = 0.0;
@@ -177,35 +199,60 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppTheme.accentEmerald,
-                  size: 18,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppTheme.accentEmerald,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Ringkasan Penasihat Finansial',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              const Text(
-                'Ringkasan Penasihat Finansial',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+              if (aiState.isLoading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.accentEmerald,
+                  ),
+                )
+              else
+                IconButton(
+                  tooltip: 'Segarkan Analisis AI',
+                  icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white70),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    ref.read(monthlyAiAnalysisProvider.notifier).generateAnalysis();
+                  },
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
-            isHealthy
-                ? 'Struktur Arus Kas Sehat & Stabil'
-                : 'Peringatan Penyerapan Arus Kas Tinggi',
+            aiResult?.headline ??
+                (isHealthy
+                    ? 'Struktur Arus Kas Sehat & Stabil'
+                    : 'Peringatan Penyerapan Arus Kas Tinggi'),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -215,15 +262,57 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
-            'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
-            '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}',
+            aiResult?.narrative ??
+                ('Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
+                    'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
+                    '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}'),
             style: const TextStyle(
               color: Color(0xFFCBD5E1),
               fontSize: 13,
               height: 1.5,
             ),
           ),
+          if (aiResult?.strategicActionPoints.isNotEmpty ?? false) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'REKOMENDASI TAKTIS BANKER',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.accentEmerald,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...aiResult!.strategicActionPoints.map((point) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• ', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            Expanded(
+                              child: Text(
+                                point,
+                                style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -240,9 +329,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
                 Text(
                   CurrencyFormatter.format(
-                    ((totalIncome - totalExpense) > 0
-                        ? (totalIncome - totalExpense) / 30
-                        : 50000),
+                    aiResult != null && aiResult.recommendedDailyBudget > 0
+                        ? aiResult.recommendedDailyBudget
+                        : ((totalIncome - totalExpense) > 0
+                            ? (totalIncome - totalExpense) / 30
+                            : 50000),
                   ),
                   style: const TextStyle(
                     color: AppTheme.accentEmerald,

@@ -136,8 +136,11 @@ void main() {
   group('Direct Gemini Client (Spark Plan Mode) Tests', () {
     test('direct call parses successful gemini json payload accurately', () async {
       final mockClient = MockHttpClient((request) async {
-        expect(request.url.toString(), contains('models/gemini-2.5-flash:generateContent'));
+        expect(request.url.toString(), contains('models/gemini-3.5-flash-lite:generateContent'));
         expect(request.url.queryParameters['key'], equals('test-spark-key'));
+
+        final requestJson = jsonDecode((request as http.Request).body) as Map<String, dynamic>;
+        expect(requestJson['generationConfig']['thinkingConfig']['thinkingLevel'], equals('HIGH'));
 
         final body = jsonEncode({
           'candidates': [
@@ -282,6 +285,91 @@ void main() {
       );
 
       final result = await service.processFinancialIntent(text: 'test failure');
+      expect(result, isNull);
+    });
+  });
+
+  group('Monthly Financials Rolling Models Engine Tests', () {
+    test('rolls to next model when earlier model returns 429 rate limit', () async {
+      final requestedModels = <String>[];
+      final mockClient = MockHttpClient((request) async {
+        final url = request.url.toString();
+        if (url.contains('gemini-3.5-flash:generateContent')) {
+          requestedModels.add('gemini-3.5-flash');
+          return http.Response('{"error":{"code":429,"message":"Resource exhausted"}}', 429);
+        } else if (url.contains('gemini-3.6-flash:generateContent')) {
+          requestedModels.add('gemini-3.6-flash');
+          final body = jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'parts': [
+                    {
+                      'text': jsonEncode({
+                        'headline': 'Kinerja Arus Kas Solid',
+                        'narrative': 'Surplus bulanan Anda mendukung percepatan target wishlist.',
+                        'portfolioRating': 'PRUDENT',
+                        'recommendedDailyBudget': 300000,
+                        'strategicActionPoints': [
+                          'Alokasikan surplus ke tabungan wishlist',
+                          'Pertahankan batas belanja harian',
+                        ],
+                      })
+                    }
+                  ]
+                }
+              }
+            ]
+          });
+          return http.Response(body, 200, headers: {'content-type': 'application/json'});
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.analyzeMonthlyFinancials(
+        totalIncome: 15000000,
+        totalExpense: 9000000,
+        savingsRate: 40.0,
+        burnRate: 300000,
+        categoryBreakdown: {'Makanan': 3000000, 'Tagihan': 2000000},
+        advisoryStyle: 'frugal',
+        wishlists: [
+          {'title': 'MacBook Pro', 'targetAmount': 20000000, 'savedAmount': 6000000}
+        ],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.usedModel, equals('gemini-3.6-flash'));
+      expect(result.headline, equals('Kinerja Arus Kas Solid'));
+      expect(result.portfolioRating, equals('PRUDENT'));
+      expect(result.recommendedDailyBudget, equals(300000));
+      expect(result.strategicActionPoints.length, equals(2));
+      expect(requestedModels, equals(['gemini-3.5-flash', 'gemini-3.6-flash']));
+    });
+
+    test('returns null when all rolling models fail with errors', () async {
+      final mockClient = MockHttpClient((request) async {
+        return http.Response('High demand overload', 503);
+      });
+
+      final service = FinancialFunctionsService(
+        httpClient: mockClient,
+        geminiApiKey: 'test-spark-key',
+      );
+
+      final result = await service.analyzeMonthlyFinancials(
+        totalIncome: 10000000,
+        totalExpense: 5000000,
+        savingsRate: 50.0,
+        burnRate: 160000,
+        categoryBreakdown: {'Operasional': 5000000},
+      );
+
       expect(result, isNull);
     });
   });

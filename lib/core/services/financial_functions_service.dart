@@ -30,6 +30,43 @@ class FinancialIntentResult {
   }
 }
 
+class MonthlyAnalysisResult {
+  final String headline;
+  final String narrative;
+  final String portfolioRating;
+  final double recommendedDailyBudget;
+  final List<String> strategicActionPoints;
+  final String usedModel;
+
+  const MonthlyAnalysisResult({
+    required this.headline,
+    required this.narrative,
+    required this.portfolioRating,
+    required this.recommendedDailyBudget,
+    required this.strategicActionPoints,
+    required this.usedModel,
+  });
+
+  factory MonthlyAnalysisResult.fromMap(
+    Map<String, dynamic> map, {
+    String usedModel = 'gemini-3.5-flash',
+  }) {
+    final actionsList = (map['strategicActionPoints'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
+    return MonthlyAnalysisResult(
+      headline: (map['headline'] as String?) ?? 'Analisis Arus Kas Bulanan',
+      narrative: (map['narrative'] as String?) ?? '',
+      portfolioRating: (map['portfolioRating'] as String?) ?? 'PRUDENT',
+      recommendedDailyBudget:
+          ((map['recommendedDailyBudget'] as num?) ?? 0).toDouble(),
+      strategicActionPoints: actionsList,
+      usedModel: usedModel,
+    );
+  }
+}
+
 const String bankerSystemInstruction =
     'Anda adalah seorang Penasihat Keuangan Eksekutif (Private Wealth Banker) pribadi yang berdedikasi, cerdas, berwibawa, dan santun.\n'
     'Tugas Anda adalah menganalisis pesan finansial nasabah, mengekstrak mutasi transaksi secara akurat, atau menjawab konsultasi keuangan dalam Bahasa Indonesia yang profesional.\n\n'
@@ -53,17 +90,24 @@ const String bankerSystemInstruction =
     '   - isClarificationNeeded: false\n'
     '   - bankerNarrative: Tanggapi dengan santun dan ingatkan kesiapan membantu keuangan nasabah.';
 
+const List<String> defaultMonthlyRollingModels = [
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
+  'gemini-3.8-flash',
+];
+
 class FinancialFunctionsService {
   final FirebaseFunctions? _functions;
   final http.Client _httpClient;
   final String _geminiApiKey;
-  final String _modelName;
+  final String _commandModelName;
 
   FinancialFunctionsService({
     FirebaseFunctions? functions,
     http.Client? httpClient,
     String? geminiApiKey,
-    this._modelName = 'gemini-2.5-flash',
+    this._commandModelName = 'gemini-3.5-flash-lite',
   })  : _functions = functions ?? _resolveFunctionsInstance(),
         _httpClient = httpClient ?? http.Client(),
         _geminiApiKey = geminiApiKey ??
@@ -163,11 +207,14 @@ class FinancialFunctionsService {
       'generationConfig': {
         'responseMimeType': 'application/json',
         'temperature': 0.2,
+        'thinkingConfig': {
+          'thinkingLevel': 'HIGH',
+        },
       }
     };
 
     final uri = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/$_modelName:generateContent?key=$key',
+      'https://generativelanguage.googleapis.com/v1beta/models/$_commandModelName:generateContent?key=$key',
     );
 
     try {
@@ -210,5 +257,124 @@ class FinancialFunctionsService {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<MonthlyAnalysisResult?> analyzeMonthlyFinancials({
+    required double totalIncome,
+    required double totalExpense,
+    required double savingsRate,
+    required double burnRate,
+    required Map<String, double> categoryBreakdown,
+    String advisoryStyle = 'balanced',
+    List<Map<String, dynamic>> wishlists = const [],
+    List<String> rollingModels = defaultMonthlyRollingModels,
+  }) async {
+    final key = _geminiApiKey.trim();
+    if (key.isEmpty) {
+      return null;
+    }
+
+    final netCashflow = totalIncome - totalExpense;
+    final promptPayload = {
+      'metrics': {
+        'totalIncome': totalIncome,
+        'totalExpense': totalExpense,
+        'netCashflow': netCashflow,
+        'savingsRate': savingsRate,
+        'dailyBurnRate': burnRate,
+        'categoryBreakdown': categoryBreakdown,
+      },
+      'advisoryStyle': advisoryStyle,
+      'wishlists': wishlists,
+    };
+
+    final systemInstructionText =
+        'Anda adalah Penasihat Keuangan Eksekutif (Private Wealth Banker) pribadi kelas dunia.\n'
+        'Analisis data keuangan bulanan nasabah dengan gaya penasihat: "$advisoryStyle".\n'
+        'Evaluasi arus kas, stabilitas simpanan, dan integrasikan proyeksi ketercapaian target Wishlist nasabah secara konkret.\n'
+        'Kembalikan respons HANYA dalam format JSON valid dengan skema:\n'
+        '{\n'
+        '  "headline": "Judul tajuk eksekutif ringkas",\n'
+        '  "narrative": "Paragraf evaluasi mendalam dan proyeksi target belanja",\n'
+        '  "portfolioRating": "EXCELLENT | PRUDENT | NEUTRAL | VULNERABLE",\n'
+        '  "recommendedDailyBudget": 250000,\n'
+        '  "strategicActionPoints": ["Poin aksi konkret 1", "Poin aksi konkret 2"]\n'
+        '}';
+
+    final requestBody = {
+      'systemInstruction': {
+        'parts': [
+          {'text': systemInstructionText}
+        ]
+      },
+      'contents': [
+        {
+          'parts': [
+            {
+              'text':
+                  'Berikut data performa portofolio keuangan dan wishlist nasabah bulan ini:\n${jsonEncode(promptPayload)}'
+            }
+          ]
+        }
+      ],
+      'generationConfig': {
+        'responseMimeType': 'application/json',
+        'temperature': 0.3,
+      }
+    };
+
+    for (final model in rollingModels) {
+      final uri = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$key',
+      );
+
+      try {
+        final response = await _httpClient.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(requestBody),
+        );
+
+        if (response.statusCode == 200) {
+          final jsonBody = jsonDecode(response.body) as Map<String, dynamic>;
+          final candidates = jsonBody['candidates'] as List?;
+          if (candidates == null || candidates.isEmpty) continue;
+
+          final firstCandidate = candidates.first as Map<String, dynamic>;
+          final content = firstCandidate['content'] as Map<String, dynamic>?;
+          final resParts = content?['parts'] as List?;
+          if (resParts == null || resParts.isEmpty) continue;
+
+          final textResult =
+              (resParts.first as Map<String, dynamic>)['text'] as String?;
+          if (textResult == null || textResult.isEmpty) continue;
+
+          String cleanJson = textResult.trim();
+          if (cleanJson.startsWith('```json')) {
+            cleanJson = cleanJson.substring(7);
+          } else if (cleanJson.startsWith('```')) {
+            cleanJson = cleanJson.substring(3);
+          }
+          if (cleanJson.endsWith('```')) {
+            cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+          }
+          cleanJson = cleanJson.trim();
+
+          final parsedData = jsonDecode(cleanJson) as Map<String, dynamic>;
+          return MonthlyAnalysisResult.fromMap(parsedData, usedModel: model);
+        }
+
+        // On 429, 500, or 503, roll to next model in the pool.
+        if (response.statusCode == 429 ||
+            response.statusCode == 503 ||
+            response.statusCode == 500) {
+          continue;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
   }
 }
