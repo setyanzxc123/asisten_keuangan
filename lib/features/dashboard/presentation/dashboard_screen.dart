@@ -9,6 +9,7 @@ import 'package:asisten_keuangan/features/transactions/domain/transaction_model.
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 import 'package:asisten_keuangan/core/services/biometric_service.dart';
+import 'package:asisten_keuangan/core/services/network_connectivity_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -16,6 +17,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final txState = ref.watch(transactionProvider);
+    final isOnline = ref.watch(isOnlineProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -111,6 +113,34 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (!isOnline) ...[
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFED7AA)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.cloud_off_rounded, size: 18, color: Color(0xFFC2410C)),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Mode Offline Aktif - Transaksi disimpan aman di penyimpanan lokal.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFC2410C),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 // 1. Executive Cashflow Card
                 _buildCashflowCard(txState),
                 const SizedBox(height: 16),

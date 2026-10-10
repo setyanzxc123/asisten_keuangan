@@ -5,6 +5,7 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
 import 'package:asisten_keuangan/core/services/financial_functions_service.dart';
+import 'package:asisten_keuangan/core/services/network_connectivity_service.dart';
 
 final financialFunctionsServiceProvider = Provider<FinancialFunctionsService>((ref) {
   return FinancialFunctionsService();
@@ -76,6 +77,12 @@ class AssistantNotifier extends Notifier<AssistantState> {
 
     if (state.pendingTransaction != null) {
       _resolvePendingClarification(text);
+      return;
+    }
+
+    final isOnline = ref.read(isOnlineProvider);
+    if (!isOnline) {
+      _processNewTransactionInput(text, source);
       return;
     }
 
