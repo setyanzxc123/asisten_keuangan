@@ -5,6 +5,10 @@ import 'package:asisten_keuangan/features/assistant/data/assistant_provider.dart
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 
+import 'package:asisten_keuangan/core/services/audio_recording_service.dart';
+import 'package:asisten_keuangan/core/services/firebase_storage_service.dart';
+import 'package:asisten_keuangan/core/services/firebase_auth_service.dart';
+
 class QuickAssistantBar extends ConsumerStatefulWidget {
   final VoidCallback onExpandChat;
 
@@ -33,25 +37,61 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
     widget.onExpandChat();
   }
 
-  void _simulateVoiceInput() async {
-    setState(() => _isVoiceRecording = true);
+  void _handleVoiceInput() async {
+    final audioService = ref.read(audioRecordingServiceProvider);
+    final storageService = ref.read(firebaseStorageServiceProvider);
+    final userAsync = ref.read(currentUserIdProvider);
+    final userId = userAsync.value ?? 'local_offline_user';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Mendengarkan suara... ("Tadi beli bensin 50 ribu tunai")'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    if (_isVoiceRecording) {
+      setState(() => _isVoiceRecording = false);
+      final recordedPath = await audioService.stopRecording();
 
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _isVoiceRecording = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perekaman selesai. Mengirim rekaman suara...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
 
-    ref.read(assistantProvider.notifier).sendUserMessage(
-          text: 'Tadi beli bensin 50 ribu tunai',
-          source: TransactionSource.voice,
+      if (recordedPath != null) {
+        await storageService.uploadAudioFile(
+          userId: userId,
+          localPath: recordedPath,
         );
-    widget.onExpandChat();
+      }
+
+      ref.read(assistantProvider.notifier).sendUserMessage(
+            text: 'Tadi beli bensin 50 ribu tunai',
+            source: TransactionSource.voice,
+          );
+      widget.onExpandChat();
+      return;
+    }
+
+    final hasPerm = await audioService.hasPermission();
+    if (!hasPerm) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Izin mikrofon diperlukan untuk mendikte transaksi.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final startedPath = await audioService.startRecording();
+    if (startedPath != null && mounted) {
+      setState(() => _isVoiceRecording = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Merekam suara... Ketuk ikon mikrofon lagi untuk selesai.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _simulateReceiptScan() async {
@@ -182,7 +222,7 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
 
                 // Mic Voice Memo Button
                 GestureDetector(
-                  onTap: _simulateVoiceInput,
+                  onTap: _handleVoiceInput,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     padding: const EdgeInsets.all(10),
