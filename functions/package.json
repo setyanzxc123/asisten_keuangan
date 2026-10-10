@@ -1,0 +1,25 @@
+{
+  "name": "asisten-keuangan-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions Gen 2 backend for financial assistant",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google/genai": "^2.3.0",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.5.0"
+  },
+  "private": true
+}
