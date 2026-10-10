@@ -30,6 +30,7 @@ export const processFinancialIntent = onCall(
   {
     secrets: [geminiApiKey],
     cors: true,
+    enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true",
   },
   async (request) => {
     const rawText = typeof request.data?.text === "string" ? request.data.text.trim() : "";

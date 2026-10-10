@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:asisten_keuangan/firebase_options.dart';
+import 'package:asisten_keuangan/core/services/firebase_app_check_service.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
 import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
 
@@ -12,6 +13,7 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await FirebaseAppCheckService().activate();
   } catch (e, stackTrace) {
     developer.log('Firebase initialization warning: $e', stackTrace: stackTrace);
   }
