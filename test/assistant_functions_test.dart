@@ -118,7 +118,7 @@ void main() {
   group('AssistantNotifier with Cloud Functions Integration Tests', () {
     test('processes RECORD_TRANSACTION from cloud callable and commits transaction', () async {
       final fakeRepo = FakeTransactionRepository();
-      final fakeResult = FinancialIntentResult(
+      const fakeResult = FinancialIntentResult(
         intent: 'RECORD_TRANSACTION',
         isClarificationNeeded: false,
         bankerNarrative: 'Pembelian laptop berhasil dibukukan dalam portofolio Anda.',
@@ -162,7 +162,7 @@ void main() {
 
     test('handles clarification required status from cloud intent', () async {
       final fakeRepo = FakeTransactionRepository();
-      final fakeClarifyResult = FinancialIntentResult(
+      const fakeClarifyResult = FinancialIntentResult(
         intent: 'RECORD_TRANSACTION',
         isClarificationNeeded: true,
         clarificationQuestion: 'Mohon konfirmasi metode pembayaran pengeluaran ini.',

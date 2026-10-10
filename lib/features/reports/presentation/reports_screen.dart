@@ -47,7 +47,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -59,7 +59,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 letterSpacing: 1.2,
               ),
             ),
-            const Text(
+            Text(
               'Laporan Eksekutif',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),

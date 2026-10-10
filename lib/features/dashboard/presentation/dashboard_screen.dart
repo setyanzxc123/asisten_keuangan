@@ -22,7 +22,7 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -34,7 +34,7 @@ class DashboardScreen extends ConsumerWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            const Text(
+            Text(
               'Asisten Keuangan',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),

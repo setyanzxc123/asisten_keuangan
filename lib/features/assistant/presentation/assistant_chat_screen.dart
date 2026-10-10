@@ -67,10 +67,10 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Column(
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Private Banker AI',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
@@ -201,10 +201,10 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!isUser) ...[
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 16,
                   backgroundColor: AppTheme.primaryNavy,
-                  child: const Icon(
+                  child: Icon(
                     Icons.account_balance_rounded,
                     size: 16,
                     color: Colors.white,
@@ -357,10 +357,10 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 12,
                   height: 12,
                   child: CircularProgressIndicator(
@@ -368,7 +368,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                     color: AppTheme.primaryNavy,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Private Banker menganalisis...',
                   style: TextStyle(

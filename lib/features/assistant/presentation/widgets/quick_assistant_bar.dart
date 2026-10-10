@@ -170,15 +170,15 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                       color: AppTheme.primaryNavy.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.chat_bubble_outline_rounded,
                           size: 16,
                           color: AppTheme.primaryNavy,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           'Asisten',
                           style: TextStyle(
