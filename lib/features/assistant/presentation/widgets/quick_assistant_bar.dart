@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
 import 'package:asisten_keuangan/features/assistant/data/assistant_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
-import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 
 import 'package:asisten_keuangan/core/services/audio_recording_service.dart';
 import 'package:asisten_keuangan/core/services/firebase_storage_service.dart';
@@ -162,27 +161,26 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                 // Expand Chat Pill Button
                 InkWell(
                   onTap: widget.onExpandChat,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryNavy.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.primaryNavy.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.chat_bubble_outline_rounded,
-                          size: 16,
+                          size: 18,
                           color: AppTheme.primaryNavy,
                         ),
                         SizedBox(width: 6),
                         Text(
                           'Asisten',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.primaryNavy,
                           ),
@@ -191,71 +189,66 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
 
-                // Manual Input Button
-                IconButton(
-                  onPressed: () => ManualTransactionBottomSheet.show(context),
-                  icon: const Icon(Icons.add_circle_outline_rounded),
-                  color: AppTheme.primaryNavy,
-                  tooltip: 'Catat Manual',
-                ),
-                const SizedBox(width: 4),
-
-                // Text Input Bar
+                // Distilled Input Capsule with Integrated Suffix Actions
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.backgroundLight,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(22),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: TextField(
-                      controller: _controller,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _submitText(),
-                      style: const TextStyle(fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'Ketik santai, misal: "Kopi 35rb qris"',
-                        hintStyle: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _submitText(),
+                            style: const TextStyle(fontSize: 14),
+                            decoration: const InputDecoration(
+                              hintText: 'Belanja apa hari ini?',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.textSecondary,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
                         ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                        IconButton(
+                          onPressed: _handleReceiptCapture,
+                          icon: const Icon(Icons.receipt_long_rounded, size: 20),
+                          color: AppTheme.textSecondary,
+                          tooltip: 'Scan Struk',
+                          constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                          padding: const EdgeInsets.all(8),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Receipt Camera Button
-                IconButton(
-                  onPressed: _handleReceiptCapture,
-                  icon: const Icon(Icons.receipt_long_rounded),
-                  color: AppTheme.textSecondary,
-                  tooltip: 'Scan Struk',
-                ),
-
-                // Mic Voice Memo Button
-                GestureDetector(
-                  onTap: _handleVoiceInput,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _isVoiceRecording
-                          ? AppTheme.accentRose
-                          : AppTheme.primaryNavy,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _isVoiceRecording ? Icons.mic : Icons.mic_none_rounded,
-                      color: Colors.white,
-                      size: 20,
+                        GestureDetector(
+                          onTap: _handleVoiceInput,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _isVoiceRecording
+                                  ? AppTheme.accentRose
+                                  : AppTheme.primaryNavy,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isVoiceRecording ? Icons.mic : Icons.mic_none_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

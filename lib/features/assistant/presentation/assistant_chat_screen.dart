@@ -78,7 +78,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   'Penasihat Keuangan Pribadi • Aktif',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppTheme.accentEmerald,
+                    color: AppTheme.accentEmeraldText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -87,85 +87,92 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // Quick prompt chips
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildQuickChip('☕ Kopi 35rb QRIS'),
-                _buildQuickChip('⛽ Bensin 100rb debit'),
-                _buildQuickChip('🛒 Belanja bulanan 650rb'),
-                _buildQuickChip('💼 Gaji freelance 3.5jt'),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(
+            children: [
+              // Quick prompt chips
+              Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildQuickChip('Kopi 35rb QRIS'),
+                    _buildQuickChip('Bensin 100rb debit'),
+                    _buildQuickChip('Belanja bulanan 650rb'),
+                    _buildQuickChip('Gaji freelance 3.5jt'),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
-          // Chat Messages List
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: assistantState.messages.length +
-                  (assistantState.isThinking ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == assistantState.messages.length &&
-                    assistantState.isThinking) {
-                  return _buildThinkingIndicator();
-                }
+              // Chat Messages List
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: assistantState.messages.length +
+                      (assistantState.isThinking ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == assistantState.messages.length &&
+                        assistantState.isThinking) {
+                      return _buildThinkingIndicator();
+                    }
 
-                final msg = assistantState.messages[index];
-                return _buildMessageBubble(msg);
-              },
-            ),
-          ),
+                    final msg = assistantState.messages[index];
+                    return _buildMessageBubble(msg);
+                  },
+                ),
+              ),
 
-          // Bottom Input Field
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.backgroundLight,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: TextField(
-                        controller: _textController,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: const InputDecoration(
-                          hintText: 'Diktekan transaksi atau tanyakan saran...',
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(fontSize: 13),
+              // Bottom Input Field
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.backgroundLight,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: TextField(
+                            controller: _textController,
+                            onSubmitted: (_) => _sendMessage(),
+                            decoration: const InputDecoration(
+                              hintText: 'Belanja apa hari ini?',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(fontSize: 13),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: () => _sendMessage(),
+                        tooltip: 'Kirim pesan',
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppTheme.primaryNavy,
+                        ),
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: () => _sendMessage(),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppTheme.primaryNavy,
-                    ),
-                    icon: const Icon(Icons.send_rounded, size: 18),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -321,7 +328,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.accentEmerald,
+                    color: AppTheme.accentEmeraldText,
                   ),
                 ),
               ),
