@@ -56,7 +56,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final avgDailyExpense = totalExpense / 30;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +78,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         actions: [
           IconButton(
             tooltip: 'Ekspor CSV',
-            icon: const Icon(Icons.file_download_outlined, color: AppTheme.primaryNavy),
+            icon: const Icon(Icons.file_download_outlined),
             onPressed: () => _handleExportCsv(context, txState.transactions),
           ),
           const SizedBox(width: 8),
@@ -152,15 +151,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => setState(() => _selectedPeriod = label),
-      selectedColor: AppTheme.primaryNavy,
-      backgroundColor: Colors.white,
+      selectedColor: AppTheme.accentPrimaryOf(context),
+      backgroundColor: AppTheme.cardOf(context),
       side: BorderSide(
-        color: isSelected ? AppTheme.primaryNavy : const Color(0xFFCBD5E1),
+        color: isSelected
+            ? AppTheme.accentPrimaryOf(context)
+            : AppTheme.borderOf(context),
       ),
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: isSelected ? Colors.white : AppTheme.textPrimary,
+        color: isSelected
+            ? AppTheme.onAccentPrimaryOf(context)
+            : AppTheme.textPrimaryOf(context),
       ),
     );
   }
@@ -367,14 +370,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardOf(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppTheme.borderOf(context)),
         ),
         alignment: Alignment.center,
-        child: const Text(
+        child: Text(
           'Belum ada data pengeluaran untuk dianalisis.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+          style: TextStyle(
+            color: AppTheme.textSecondaryOf(context),
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -393,9 +399,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardOf(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppTheme.borderOf(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,10 +422,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               const SizedBox(width: 8),
               Text(
                 'Total: ${CurrencyFormatter.formatShort(totalExpense)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryOf(context),
                 ),
               ),
             ],
@@ -503,27 +509,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   Expanded(
                     child: Text(
                       cat,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryOf(context),
                       ),
                     ),
                   ),
                   Text(
                     '$percent% ',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     CurrencyFormatter.format(amt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryOf(context),
                     ),
                   ),
                 ],
@@ -543,19 +549,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardOf(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppTheme.borderOf(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Metrik & Indikator Kunci',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryOf(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -616,24 +622,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
+        color: AppTheme.fillOf(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: AppTheme.borderOf(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryOf(context),
             ),
           ),
           const SizedBox(height: 2),
@@ -658,27 +667,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardOf(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppTheme.borderOf(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ekspor & Arsip Keuangan',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryOf(context),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Unduh rekapan mutasi transaksi dalam format CSV standar (RFC 4180) untuk pembukuan eksternal.',
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryOf(context),
               height: 1.4,
             ),
           ),
@@ -694,8 +703,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryNavy,
-                side: const BorderSide(color: AppTheme.primaryNavy),
+                foregroundColor: AppTheme.accentPrimaryOf(context),
+                side: BorderSide(color: AppTheme.accentPrimaryOf(context)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -720,9 +729,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: AppTheme.cardOf(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -731,16 +740,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.table_chart_rounded, color: AppTheme.primaryNavy),
-                    SizedBox(width: 8),
+                    Icon(Icons.table_chart_rounded, color: AppTheme.accentPrimaryOf(context)),
+                    const SizedBox(width: 8),
                     Text(
                       'Pratinjau Ekspor CSV',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryOf(context),
                       ),
                     ),
                   ],
@@ -754,7 +763,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             const SizedBox(height: 12),
             Text(
               'Total ${transactions.length} mutasi berhasil diformat ke CSV.',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondaryOf(context),
+              ),
             ),
             const SizedBox(height: 12),
             Container(
@@ -762,17 +774,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppTheme.fillOf(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppTheme.borderOf(context)),
               ),
               child: SingleChildScrollView(
                 child: Text(
                   csvData,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontSize: 11,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryOf(context),
                   ),
                 ),
               ),
@@ -793,14 +805,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   );
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.primaryNavy,
+                  backgroundColor: AppTheme.accentPrimaryOf(context),
+                  foregroundColor: AppTheme.onAccentPrimaryOf(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 icon: const Icon(Icons.copy_rounded, size: 18),
                 label: const Text(
-                  'Salin Berkas CSV',
+                  'Salin CSV ke Clipboard',
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),

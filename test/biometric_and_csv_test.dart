@@ -68,7 +68,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pratinjau Ekspor CSV'), findsOneWidget);
-      expect(find.text('Salin Berkas CSV'), findsOneWidget);
+      expect(find.text('Salin CSV ke Clipboard'), findsOneWidget);
     });
   });
 }

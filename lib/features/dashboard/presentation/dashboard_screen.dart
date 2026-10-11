@@ -21,9 +21,8 @@ class DashboardScreen extends ConsumerWidget {
     final isOnline = ref.watch(isOnlineProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -31,11 +30,11 @@ class DashboardScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryOf(context),
                 letterSpacing: 1.2,
               ),
             ),
-            Text(
+            const Text(
               'Asisten Keuangan',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
@@ -150,7 +149,7 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // 2. Budget Absorption Gauge Card
-                _buildBudgetGaugeCard(txState),
+                _buildBudgetGaugeCard(context, txState),
                 const SizedBox(height: 16),
 
                 // 3. Reports Banner Card
@@ -163,7 +162,7 @@ class DashboardScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -171,15 +170,15 @@ class DashboardScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryOf(context),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Geser untuk edit atau hapus',
                           style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryOf(context),
                           ),
                         ),
                       ],
@@ -196,7 +195,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryNavy,
+                        foregroundColor: AppTheme.accentPrimaryOf(context),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
@@ -207,7 +206,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 if (txState.transactions.isEmpty)
-                  _buildEmptyState()
+                  _buildEmptyState(context)
                 else
                   ListView.separated(
                     shrinkWrap: true,
@@ -389,7 +388,10 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBudgetGaugeCard(TransactionState state) {
+  Widget _buildBudgetGaugeCard(
+    BuildContext context,
+    TransactionState state,
+  ) {
     final percentage = (state.budgetUsedPercentage * 100).toInt();
     final isWarning = percentage >= 80;
     final isDanger = percentage >= 100;
@@ -405,9 +407,9 @@ class DashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardOf(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppTheme.borderOf(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,12 +417,12 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Alokasi Anggaran Bulanan',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryOf(context),
                   ),
                 ),
                 Text(
@@ -439,7 +441,7 @@ class DashboardScreen extends ConsumerWidget {
               child: LinearProgressIndicator(
                 value: state.budgetUsedPercentage,
                 minHeight: 10,
-                backgroundColor: const Color(0xFFF1F5F9),
+                backgroundColor: AppTheme.trackOf(context),
                 valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               ),
             ),
@@ -449,17 +451,17 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Text(
                   'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryOf(context),
                   ),
                 ),
                 Text(
                   'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryOf(context),
                   ),
                 ),
               ],
@@ -596,9 +598,9 @@ class DashboardScreen extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.cardOf(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            border: Border.all(color: AppTheme.borderOf(context)),
           ),
           child: Row(
             children: [
@@ -645,7 +647,7 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        _buildSourceBadge(tx.source),
+                        _buildSourceBadge(context, tx.source),
                       ],
                     ),
                   ],
@@ -666,7 +668,10 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSourceBadge(TransactionSource source) {
+  Widget _buildSourceBadge(
+    BuildContext context,
+    TransactionSource source,
+  ) {
     IconData icon;
     String label;
     switch (source) {
@@ -685,19 +690,22 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: AppTheme.trackOf(context),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: AppTheme.textSecondary),
+          Icon(icon, size: 11, color: AppTheme.textSecondaryOf(context)),
           const SizedBox(width: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontSize: 10,
+              color: AppTheme.textSecondaryOf(context),
+            ),
           ),
         ],
       ),
@@ -716,9 +724,9 @@ class DashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardOf(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppTheme.borderOf(context)),
         ),
         child: Row(
           children: [
@@ -769,14 +777,17 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         'Belum ada transaksi. Coba diktekan pada bar asisten di bawah.',
         textAlign: TextAlign.center,
-        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+        style: TextStyle(
+          color: AppTheme.textSecondaryOf(context),
+          fontSize: 13,
+        ),
       ),
     );
   }

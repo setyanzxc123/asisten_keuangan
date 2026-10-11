@@ -18,6 +18,36 @@ class AppTheme {
   static const Color warningText = Color(0xFFC2410C);
   static const Color neutralSurfaceAlt = Color(0xFFF1F5F9);
 
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color scaffoldOf(BuildContext context) =>
+      isDark(context) ? primaryNavy : backgroundLight;
+
+  static Color cardOf(BuildContext context) =>
+      isDark(context) ? surfaceDark : cardSurface;
+
+  static Color fillOf(BuildContext context) =>
+      isDark(context) ? surfaceDark : backgroundLight;
+
+  static Color trackOf(BuildContext context) =>
+      isDark(context) ? const Color(0xFF334155) : neutralSurfaceAlt;
+
+  static Color borderOf(BuildContext context) =>
+      isDark(context) ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+  static Color textPrimaryOf(BuildContext context) =>
+      isDark(context) ? Colors.white : textPrimary;
+
+  static Color textSecondaryOf(BuildContext context) =>
+      isDark(context) ? const Color(0xFF94A3B8) : textSecondary;
+
+  static Color accentPrimaryOf(BuildContext context) =>
+      isDark(context) ? accentEmerald : primaryNavy;
+
+  static Color onAccentPrimaryOf(BuildContext context) =>
+      isDark(context) ? primaryNavy : Colors.white;
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

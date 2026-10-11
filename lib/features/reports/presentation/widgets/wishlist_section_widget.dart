@@ -37,7 +37,7 @@ class WishlistSectionWidget extends ConsumerWidget {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               ),
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryNavy,
+                foregroundColor: AppTheme.accentPrimaryOf(context),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               ),
             ),
@@ -49,14 +49,17 @@ class WishlistSectionWidget extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardOf(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTheme.borderOf(context)),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 'Belum ada target wishlist. Ketuk "+ Tambah" untuk memulai.',
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondaryOf(context),
+                ),
               ),
             ),
           )
@@ -78,10 +81,10 @@ class WishlistSectionWidget extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDone ? AppTheme.accentEmerald : const Color(0xFFE2E8F0),
+          color: isDone ? AppTheme.accentEmerald : AppTheme.borderOf(context),
           width: isDone ? 1.5 : 1.0,
         ),
         boxShadow: [
@@ -105,24 +108,35 @@ class WishlistSectionWidget extends ConsumerWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    color: isDone ? AppTheme.textSecondary : AppTheme.textPrimary,
+                    color: isDone
+                        ? AppTheme.textSecondaryOf(context)
+                        : AppTheme.textPrimaryOf(context),
                   ),
                 ),
               ),
-              InkWell(
-                onTap: () {
-                  ref.read(wishlistProvider.notifier).toggleAchieved(item.id);
-                  ref.read(monthlyAiAnalysisProvider.notifier).generateAnalysis();
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    isDone
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: isDone ? AppTheme.accentEmerald : const Color(0xFF94A3B8),
-                    size: 22,
+              Tooltip(
+                message: isDone
+                    ? 'Tandai belum tercapai'
+                    : 'Tandai target tercapai',
+                child: InkWell(
+                  onTap: () {
+                    ref.read(wishlistProvider.notifier).toggleAchieved(item.id);
+                    ref
+                        .read(monthlyAiAnalysisProvider.notifier)
+                        .generateAnalysis();
+                  },
+                  borderRadius: BorderRadius.circular(22),
+                  child: Padding(
+                    padding: const EdgeInsets.all(11),
+                    child: Icon(
+                      isDone
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: isDone
+                          ? AppTheme.accentEmerald
+                          : AppTheme.textSecondaryOf(context),
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -134,18 +148,20 @@ class WishlistSectionWidget extends ConsumerWidget {
             children: [
               Text(
                 'Terkumpul: ${CurrencyFormatter.format(item.savedAmount)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.accentEmeraldText,
+                  color: AppTheme.isDark(context)
+                      ? AppTheme.accentEmerald
+                      : AppTheme.accentEmeraldText,
                 ),
               ),
               Text(
                 'Target: ${CurrencyFormatter.format(item.targetAmount)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryOf(context),
                 ),
               ),
             ],
@@ -156,7 +172,7 @@ class WishlistSectionWidget extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: AppTheme.trackOf(context),
               valueColor: AlwaysStoppedAnimation<Color>(
                 isDone ? AppTheme.accentEmerald : AppTheme.primaryNavy,
               ),
@@ -173,7 +189,11 @@ class WishlistSectionWidget extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isDone ? AppTheme.accentEmeraldText : AppTheme.textSecondary,
+                  color: isDone
+                      ? (AppTheme.isDark(context)
+                          ? AppTheme.accentEmerald
+                          : AppTheme.accentEmeraldText)
+                      : AppTheme.textSecondaryOf(context),
                 ),
               ),
               Row(
@@ -187,7 +207,7 @@ class WishlistSectionWidget extends ConsumerWidget {
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                       ),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryNavy,
+                        foregroundColor: AppTheme.accentPrimaryOf(context),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         minimumSize: const Size(0, 36),
                       ),
@@ -195,9 +215,9 @@ class WishlistSectionWidget extends ConsumerWidget {
                   IconButton(
                     onPressed: () => _confirmDeleteWishlist(context, ref, item),
                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    color: const Color(0xFF94A3B8),
+                    color: AppTheme.textSecondaryOf(context),
                     padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                     tooltip: 'Hapus Target',
                   ),
                 ],
@@ -269,7 +289,7 @@ class WishlistSectionWidget extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.cardOf(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -287,12 +307,12 @@ class WishlistSectionWidget extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tambah Target Wishlist',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryOf(context),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -357,14 +377,15 @@ class WishlistSectionWidget extends ConsumerWidget {
                       Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryNavy,
+                      backgroundColor: AppTheme.accentPrimaryOf(context),
+                      foregroundColor: AppTheme.onAccentPrimaryOf(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
                       'Simpan Target',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -388,7 +409,7 @@ class WishlistSectionWidget extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.cardOf(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -408,31 +429,37 @@ class WishlistSectionWidget extends ConsumerWidget {
               children: [
                 Text(
                   'Tabung ke "${item.title}"',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryOf(context),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Sisa target yang dibutuhkan: ${CurrencyFormatter.format(item.remainingAmount)}',
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondaryOf(context),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.backgroundLight,
+                    color: AppTheme.fillOf(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: AppTheme.borderOf(context)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Sisa Anggaran Bulan Ini:',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondaryOf(context),
+                        ),
                       ),
                       Text(
                         CurrencyFormatter.format(txState.remainingBudget),
@@ -440,7 +467,9 @@ class WishlistSectionWidget extends ConsumerWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: txState.remainingBudget >= 0
-                              ? AppTheme.accentEmeraldText
+                              ? (AppTheme.isDark(context)
+                                  ? AppTheme.accentEmerald
+                                  : AppTheme.accentEmeraldText)
                               : AppTheme.accentRose,
                         ),
                       ),
@@ -482,14 +511,15 @@ class WishlistSectionWidget extends ConsumerWidget {
                       Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryNavy,
+                      backgroundColor: AppTheme.accentPrimaryOf(context),
+                      foregroundColor: AppTheme.onAccentPrimaryOf(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
                       'Tambahkan Tabungan',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

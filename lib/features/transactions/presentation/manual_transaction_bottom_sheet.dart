@@ -160,9 +160,9 @@ class _ManualTransactionBottomSheetState
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardOf(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -175,7 +175,7 @@ class _ManualTransactionBottomSheetState
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: AppTheme.trackOf(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -187,9 +187,9 @@ class _ManualTransactionBottomSheetState
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.edit_note_rounded,
-                      color: AppTheme.primaryNavy,
+                      color: AppTheme.accentPrimaryOf(context),
                       size: 22,
                     ),
                     const SizedBox(width: 8),
@@ -197,10 +197,10 @@ class _ManualTransactionBottomSheetState
                       widget.initialTransaction != null
                           ? 'Edit Transaksi'
                           : 'Input Transaksi Manual',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryOf(context),
                       ),
                     ),
                   ],
@@ -219,7 +219,7 @@ class _ManualTransactionBottomSheetState
             // Segmented Button: Pengeluaran vs Pemasukan
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.neutralSurfaceAlt,
+                color: AppTheme.trackOf(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -244,34 +244,34 @@ class _ManualTransactionBottomSheetState
             const SizedBox(height: 20),
 
             // Nominal Input (Besar & Jelas)
-            const Text(
+            Text(
               'Nominal (Rp)',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondaryOf(context)),
             ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.backgroundLight,
+                color: AppTheme.fillOf(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppTheme.borderOf(context)),
               ),
               child: TextField(
                 controller: _amountController,
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.primaryNavy,
+                  color: AppTheme.textPrimaryOf(context),
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   prefixText: 'Rp ',
                   prefixStyle: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryOf(context),
                   ),
                   hintText: '0',
                   border: InputBorder.none,
@@ -281,34 +281,34 @@ class _ManualTransactionBottomSheetState
             const SizedBox(height: 16),
 
             // Judul / Keterangan (Opsional)
-            const Text(
+            Text(
               'Catatan / Nama Transaksi',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondaryOf(context)),
             ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: AppTheme.backgroundLight,
+                color: AppTheme.fillOf(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppTheme.borderOf(context)),
               ),
               child: TextField(
                 controller: _titleController,
-                style: const TextStyle(fontSize: 14),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 14, color: AppTheme.textPrimaryOf(context)),
+                decoration: InputDecoration(
                   hintText: 'Contoh: Nasi Padang, Bensin, Gaji Pokok',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  hintStyle: TextStyle(fontSize: 13, color: AppTheme.textSecondaryOf(context)),
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
             // Kategori (Horizontal Chips)
-            const Text(
+            Text(
               'Kategori',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondaryOf(context)),
             ),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -322,15 +322,19 @@ class _ManualTransactionBottomSheetState
                       label: Text(cat),
                       selected: isSelected,
                       onSelected: (_) => setState(() => _selectedCategory = cat),
-                      selectedColor: AppTheme.primaryNavy,
-                      backgroundColor: Colors.white,
+                      selectedColor: AppTheme.accentPrimaryOf(context),
+                      backgroundColor: AppTheme.cardOf(context),
                       side: BorderSide(
-                        color: isSelected ? AppTheme.primaryNavy : const Color(0xFFE2E8F0),
+                        color: isSelected
+                            ? AppTheme.accentPrimaryOf(context)
+                            : AppTheme.borderOf(context),
                       ),
                       labelStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                        color: isSelected
+                            ? AppTheme.onAccentPrimaryOf(context)
+                            : AppTheme.textPrimaryOf(context),
                       ),
                     ),
                   );
@@ -340,9 +344,9 @@ class _ManualTransactionBottomSheetState
             const SizedBox(height: 16),
 
             // Metode Pembayaran (Horizontal Chips)
-            const Text(
+            Text(
               'Metode Pembayaran / Sumber Dana',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondaryOf(context)),
             ),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -356,15 +360,19 @@ class _ManualTransactionBottomSheetState
                       label: Text(method),
                       selected: isSelected,
                       onSelected: (_) => setState(() => _selectedPaymentMethod = method),
-                      selectedColor: AppTheme.surfaceDark,
-                      backgroundColor: Colors.white,
+                      selectedColor: AppTheme.accentPrimaryOf(context),
+                      backgroundColor: AppTheme.cardOf(context),
                       side: BorderSide(
-                        color: isSelected ? AppTheme.surfaceDark : const Color(0xFFE2E8F0),
+                        color: isSelected
+                            ? AppTheme.accentPrimaryOf(context)
+                            : AppTheme.borderOf(context),
                       ),
                       labelStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                        color: isSelected
+                            ? AppTheme.onAccentPrimaryOf(context)
+                            : AppTheme.textPrimaryOf(context),
                       ),
                     ),
                   );
@@ -377,7 +385,8 @@ class _ManualTransactionBottomSheetState
               child: FilledButton(
                 onPressed: _saveTransaction,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.primaryNavy,
+                  backgroundColor: AppTheme.accentPrimaryOf(context),
+                  foregroundColor: AppTheme.onAccentPrimaryOf(context),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
@@ -422,7 +431,9 @@ class _ManualTransactionBottomSheetState
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : AppTheme.textSecondary,
+              color: isSelected
+                  ? AppTheme.onAccentPrimaryOf(context)
+                  : AppTheme.textSecondaryOf(context),
             ),
           ),
         ),

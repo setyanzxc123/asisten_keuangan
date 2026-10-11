@@ -14,12 +14,12 @@ class AdvisoryChipSelector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'GAYA PENASIHAT BANKER',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryOf(context),
             letterSpacing: 1.1,
           ),
         ),
@@ -38,19 +38,21 @@ class AdvisoryChipSelector extends ConsumerWidget {
                       fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
+                      color: isSelected
+                          ? AppTheme.onAccentPrimaryOf(context)
+                          : AppTheme.textPrimaryOf(context),
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: AppTheme.primaryNavy,
-                  backgroundColor: Colors.white,
-                  checkmarkColor: Colors.white,
+                  selectedColor: AppTheme.accentPrimaryOf(context),
+                  backgroundColor: AppTheme.cardOf(context),
+                  checkmarkColor: AppTheme.onAccentPrimaryOf(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
                       color: isSelected
-                          ? AppTheme.primaryNavy
-                          : const Color(0xFFE2E8F0),
+                          ? AppTheme.accentPrimaryOf(context)
+                          : AppTheme.borderOf(context),
                     ),
                   ),
                   onSelected: (_) {
