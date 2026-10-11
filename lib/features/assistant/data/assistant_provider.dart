@@ -63,10 +63,17 @@ class AssistantNotifier extends Notifier<AssistantState> {
     String? storagePath,
     String? mimeType,
   }) async {
+    final isMedia = storagePath != null || mimeType != null;
+    final displayText = text.trim().isNotEmpty
+        ? text.trim()
+        : ((mimeType?.startsWith('audio') ?? false)
+            ? '[Rekaman suara]'
+            : '[Foto struk]');
+
     final userMsg = ChatMessage(
       id: _uuid.v4(),
       sender: MessageSender.user,
-      content: text,
+      content: displayText,
       timestamp: DateTime.now(),
     );
 
@@ -75,31 +82,81 @@ class AssistantNotifier extends Notifier<AssistantState> {
       isThinking: true,
     );
 
-    if (state.pendingTransaction != null) {
+    if (state.pendingTransaction != null && !isMedia) {
       _resolvePendingClarification(text);
       return;
     }
 
     final isOnline = ref.read(isOnlineProvider);
     if (!isOnline) {
-      _processNewTransactionInput(text, source);
+      if (isMedia) {
+        _respondMediaUnavailable(mimeType);
+        return;
+      }
+      _processNewTransactionInput(text, source, viaLocalFallback: true);
       return;
     }
 
     final functionsService = ref.read(financialFunctionsServiceProvider);
-    final cloudResult = await functionsService.processFinancialIntent(
-      text: text,
-      storagePath: storagePath,
-      mimeType: mimeType,
-    );
+    FinancialIntentResult? cloudResult;
+    try {
+      cloudResult = await functionsService.processFinancialIntent(
+        text: text,
+        storagePath: storagePath,
+        mimeType: mimeType,
+      );
+    } catch (_) {
+      cloudResult = null;
+    }
 
     if (cloudResult != null) {
       _applyCloudIntentResult(cloudResult, source);
       return;
     }
 
+    if (isMedia) {
+      _respondMediaUnavailable(mimeType);
+      return;
+    }
+
     await Future.delayed(const Duration(milliseconds: 300));
-    _processNewTransactionInput(text, source);
+    _processNewTransactionInput(text, source, viaLocalFallback: true);
+  }
+
+  void _respondMediaUnavailable(String? mimeType) {
+    final kind = (mimeType?.startsWith('audio') ?? false)
+        ? 'rekaman suara'
+        : 'foto struk';
+    final msg = ChatMessage(
+      id: _uuid.v4(),
+      sender: MessageSender.banker,
+      content:
+          'Mohon maaf, analisis $kind tidak dapat diproses karena layanan AI sedang tidak tersedia. Tidak ada transaksi yang dibukukan dari media ini agar akurasi data tetap terjaga. Silakan gunakan input teks atau input manual.',
+      timestamp: DateTime.now(),
+    );
+    state = state.copyWith(
+      messages: [...state.messages, msg],
+      isThinking: false,
+    );
+  }
+
+  void undoCommittedTransaction(String messageId) {
+    final index = state.messages.indexWhere((m) => m.id == messageId);
+    if (index == -1) return;
+
+    final msg = state.messages[index];
+    final tx = msg.extractedTransaction;
+    if (tx == null || msg.status != MessageStatus.committed) return;
+
+    ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
+
+    final updatedMsg = msg.copyWith(
+      status: MessageStatus.normal,
+      content: '${msg.content}\n\nTransaksi telah diurungkan dan tidak dibukukan.',
+    );
+    final messages = [...state.messages];
+    messages[index] = updatedMsg;
+    state = state.copyWith(messages: messages);
   }
 
   void _applyCloudIntentResult(
@@ -206,7 +263,11 @@ class AssistantNotifier extends Notifier<AssistantState> {
     );
   }
 
-  void _processNewTransactionInput(String input, TransactionSource source) {
+  void _processNewTransactionInput(
+    String input,
+    TransactionSource source, {
+    bool viaLocalFallback = false,
+  }) {
     final lower = input.toLowerCase();
 
     final amount = _extractAmount(lower);
@@ -223,6 +284,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
         content:
             'Data nominal belum terdeteksi secara presisi. Mohon sebutkan nominal pengeluaran atau pemasukan Anda (misal: "Beli kopi 35rb" atau "Isi bensin 100 ribu").',
         timestamp: DateTime.now(),
+        viaLocalFallback: viaLocalFallback,
       );
       state = state.copyWith(
         messages: [...state.messages, bankerResponse],
@@ -261,6 +323,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
         timestamp: DateTime.now(),
         status: MessageStatus.pendingClarification,
         extractedTransaction: candidateTx,
+        viaLocalFallback: viaLocalFallback,
       );
 
       state = state.copyWith(
@@ -285,6 +348,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
       timestamp: DateTime.now(),
       status: MessageStatus.committed,
       extractedTransaction: candidateTx,
+      viaLocalFallback: viaLocalFallback,
     );
 
     state = state.copyWith(

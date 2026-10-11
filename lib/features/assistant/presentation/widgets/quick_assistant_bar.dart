@@ -48,23 +48,41 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
       final recordedPath = await audioService.stopRecording();
 
       if (!mounted) return;
+
+      if (recordedPath == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Perekaman gagal atau tidak tersedia di perangkat ini. Gunakan input teks atau input manual.',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Perekaman selesai. Mengirim rekaman suara...'),
+          content: Text('Perekaman selesai. Mengunggah dan menganalisis rekaman...'),
           duration: Duration(seconds: 2),
         ),
       );
 
-      if (recordedPath != null) {
-        await storageService.uploadAudioFile(
+      String? storageUrl;
+      try {
+        storageUrl = await storageService.uploadAudioFile(
           userId: userId,
           localPath: recordedPath,
         );
+      } catch (_) {
+        storageUrl = null;
       }
 
       ref.read(assistantProvider.notifier).sendUserMessage(
-            text: 'Tadi beli bensin 50 ribu tunai',
+            text: '',
             source: TransactionSource.voice,
+            storagePath: storageUrl,
+            mimeType: 'audio/m4a',
           );
       widget.onExpandChat();
       return;
@@ -110,23 +128,40 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
     final imagePath = await cameraService.captureReceiptFromCamera();
     if (!mounted) return;
 
-    if (imagePath != null) {
+    if (imagePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Mengunggah dan menganalisis foto struk...'),
-          duration: Duration(seconds: 2),
+          content: Text(
+            'Kamera tidak tersedia atau pengambilan gambar dibatalkan. Tidak ada struk yang dianalisis.',
+          ),
+          duration: Duration(seconds: 3),
         ),
       );
+      return;
+    }
 
-      await storageService.uploadReceiptImage(
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Mengunggah dan menganalisis foto struk...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    String? storageUrl;
+    try {
+      storageUrl = await storageService.uploadReceiptImage(
         userId: userId,
         localPath: imagePath,
       );
+    } catch (_) {
+      storageUrl = null;
     }
 
     ref.read(assistantProvider.notifier).sendUserMessage(
-          text: 'Struk Belanja Supermarket 275.000 QRIS',
+          text: '',
           source: TransactionSource.receipt,
+          storagePath: storageUrl,
+          mimeType: 'image/jpeg',
         );
     widget.onExpandChat();
   }
@@ -139,10 +174,11 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardOf(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -165,24 +201,26 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryNavy.withValues(alpha: 0.07),
+                      color: isDark
+                          ? AppTheme.accentEmerald.withValues(alpha: 0.15)
+                          : AppTheme.primaryNavy.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.chat_bubble_outline_rounded,
                           size: 18,
-                          color: AppTheme.primaryNavy,
+                          color: AppTheme.accentPrimaryOf(context),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
                           'Asisten',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryNavy,
+                            color: AppTheme.accentPrimaryOf(context),
                           ),
                         ),
                       ],
@@ -195,9 +233,9 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.backgroundLight,
+                      color: AppTheme.fillOf(context),
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AppTheme.borderOf(context)),
                     ),
                     child: Row(
                       children: [
@@ -207,14 +245,14 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _submitText(),
                             style: const TextStyle(fontSize: 14),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Belanja apa hari ini?',
                               hintStyle: TextStyle(
                                 fontSize: 13,
-                                color: AppTheme.textSecondary,
+                                color: AppTheme.textSecondaryOf(context),
                               ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
+                              contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14,
                                 vertical: 10,
                               ),
@@ -224,26 +262,26 @@ class _QuickAssistantBarState extends ConsumerState<QuickAssistantBar> {
                         IconButton(
                           onPressed: _handleReceiptCapture,
                           icon: const Icon(Icons.receipt_long_rounded, size: 20),
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryOf(context),
                           tooltip: 'Scan Struk',
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                          padding: const EdgeInsets.all(5),
                         ),
                         GestureDetector(
                           onTap: _handleVoiceInput,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 250),
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.all(8),
+                            margin: const EdgeInsets.only(right: 2),
+                            padding: const EdgeInsets.all(13),
                             decoration: BoxDecoration(
                               color: _isVoiceRecording
                                   ? AppTheme.accentRose
-                                  : AppTheme.primaryNavy,
+                                  : AppTheme.accentPrimaryOf(context),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               _isVoiceRecording ? Icons.mic : Icons.mic_none_rounded,
-                              color: Colors.white,
+                              color: AppTheme.onAccentPrimaryOf(context),
                               size: 18,
                             ),
                           ),

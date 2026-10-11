@@ -67,10 +67,10 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Private Banker AI',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
@@ -78,7 +78,9 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   'Penasihat Keuangan Pribadi • Aktif',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppTheme.accentEmeraldText,
+                    color: AppTheme.isDark(context)
+                        ? AppTheme.accentEmerald
+                        : AppTheme.accentEmeraldText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -106,7 +108,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              Divider(height: 1, color: AppTheme.borderOf(context)),
 
               // Chat Messages List
               Expanded(
@@ -130,9 +132,11 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               // Bottom Input Field
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardOf(context),
+                  border: Border(
+                    top: BorderSide(color: AppTheme.borderOf(context)),
+                  ),
                 ),
                 child: SafeArea(
                   child: Row(
@@ -141,9 +145,9 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: AppTheme.backgroundLight,
+                            color: AppTheme.fillOf(context),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: AppTheme.borderOf(context)),
                           ),
                           child: TextField(
                             controller: _textController,
@@ -162,7 +166,8 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                         tooltip: 'Kirim pesan',
                         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                         style: IconButton.styleFrom(
-                          backgroundColor: AppTheme.primaryNavy,
+                          backgroundColor: AppTheme.accentPrimaryOf(context),
+                          foregroundColor: AppTheme.onAccentPrimaryOf(context),
                         ),
                         icon: const Icon(Icons.send_rounded, size: 18),
                       ),
@@ -181,14 +186,16 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ActionChip(
-        label: Text(text, style: const TextStyle(fontSize: 12)),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-        onPressed: () {
-          // Remove emoji from front
-          final clean = text.substring(2).trim();
-          _sendMessage(customText: clean);
-        },
+        label: Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.textPrimaryOf(context),
+          ),
+        ),
+        backgroundColor: AppTheme.cardOf(context),
+        side: BorderSide(color: AppTheme.borderOf(context)),
+        onPressed: () => _sendMessage(customText: text),
       ),
     );
   }
@@ -223,7 +230,9 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isUser ? AppTheme.primaryNavy : Colors.white,
+                    color: isUser
+                        ? AppTheme.primaryNavy
+                        : AppTheme.cardOf(context),
                     borderRadius: BorderRadius.circular(16).copyWith(
                       bottomRight:
                           isUser ? const Radius.circular(0) : const Radius.circular(16),
@@ -232,7 +241,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                     ),
                     border: isUser
                         ? null
-                        : Border.all(color: const Color(0xFFE2E8F0)),
+                        : Border.all(color: AppTheme.borderOf(context)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.03),
@@ -244,17 +253,41 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (!isUser && msg.viaLocalFallback) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentGold.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'MODE LOKAL - AI TIDAK TERSEDIA',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: Color(0xFFB45309),
+                            ),
+                          ),
+                        ),
+                      ],
                       Text(
                         msg.content,
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.4,
-                          color: isUser ? Colors.white : AppTheme.textPrimary,
+                          color: isUser
+                              ? Colors.white
+                              : AppTheme.textPrimaryOf(context),
                         ),
                       ),
                       if (msg.extractedTransaction != null) ...[
                         const SizedBox(height: 10),
-                        _buildTransactionVoucher(msg.extractedTransaction!),
+                        _buildTransactionVoucher(msg),
                       ],
                     ],
                   ),
@@ -294,13 +327,29 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
     );
   }
 
-  Widget _buildTransactionVoucher(TransactionModel tx) {
+  Widget _buildTransactionVoucher(ChatMessage msg) {
+    final tx = msg.extractedTransaction!;
+    final isCommitted = msg.status == MessageStatus.committed;
+    final isPending = msg.status == MessageStatus.pendingClarification;
+
+    final badgeLabel = isCommitted
+        ? 'TERCATAT'
+        : (isPending ? 'MENUNGGU KONFIRMASI' : 'DIURUNGKAN');
+    final badgeColor = isCommitted
+        ? AppTheme.accentEmeraldText
+        : (isPending ? const Color(0xFFB45309) : AppTheme.textSecondary);
+    final badgeBackground = isCommitted
+        ? AppTheme.accentEmerald.withValues(alpha: 0.15)
+        : (isPending
+            ? AppTheme.accentGold.withValues(alpha: 0.15)
+            : AppTheme.neutralSurfaceAlt);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
+        color: AppTheme.fillOf(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        border: Border.all(color: AppTheme.borderOf(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,25 +359,25 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
             children: [
               Text(
                 tx.category.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryOf(context),
                   letterSpacing: 0.8,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentEmerald.withValues(alpha: 0.15),
+                  color: badgeBackground,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'TERCATAT',
+                child: Text(
+                  badgeLabel,
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.accentEmeraldText,
+                    color: badgeColor,
                   ),
                 ),
               ),
@@ -337,16 +386,59 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
           const SizedBox(height: 6),
           Text(
             CurrencyFormatter.format(tx.amount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: AppTheme.primaryNavy,
+              color: AppTheme.textPrimaryOf(context),
             ),
           ),
           Text(
             '${tx.title} • ${tx.paymentMethod}',
-            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondaryOf(context),
+            ),
           ),
+          if (isCommitted &&
+              tx.type == TransactionType.expense &&
+              tx.paymentMethod == 'Belum Ditentukan') ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Metode pembayaran belum ditentukan. Urungkan lalu sebutkan metodenya agar laporan akurat.',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFB45309),
+              ),
+            ),
+          ],
+          if (isCommitted) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => ref
+                    .read(assistantProvider.notifier)
+                    .undoCommittedTransaction(msg.id),
+                icon: const Icon(Icons.undo_rounded, size: 14),
+                label: const Text(
+                  'Urungkan',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(44, 36),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -360,14 +452,14 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardOf(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTheme.borderOf(context)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 12,
                   height: 12,
                   child: CircularProgressIndicator(
@@ -375,13 +467,13 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                     color: AppTheme.primaryNavy,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'Private Banker menganalisis...',
                   style: TextStyle(
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryOf(context),
                   ),
                 ),
               ],

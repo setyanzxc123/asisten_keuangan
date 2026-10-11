@@ -16,6 +16,7 @@ class ChatMessage {
   final DateTime timestamp;
   final MessageStatus status;
   final TransactionModel? extractedTransaction;
+  final bool viaLocalFallback;
 
   const ChatMessage({
     required this.id,
@@ -24,6 +25,7 @@ class ChatMessage {
     required this.timestamp,
     this.status = MessageStatus.normal,
     this.extractedTransaction,
+    this.viaLocalFallback = false,
   });
 
   ChatMessage copyWith({
@@ -33,6 +35,7 @@ class ChatMessage {
     DateTime? timestamp,
     MessageStatus? status,
     TransactionModel? extractedTransaction,
+    bool? viaLocalFallback,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -41,6 +44,7 @@ class ChatMessage {
       timestamp: timestamp ?? this.timestamp,
       status: status ?? this.status,
       extractedTransaction: extractedTransaction ?? this.extractedTransaction,
+      viaLocalFallback: viaLocalFallback ?? this.viaLocalFallback,
     );
   }
 }

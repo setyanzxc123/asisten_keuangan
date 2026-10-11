@@ -5,6 +5,8 @@ import 'package:asisten_keuangan/core/services/camera_receipt_service.dart';
 import 'package:asisten_keuangan/features/assistant/data/assistant_provider.dart';
 import 'package:asisten_keuangan/features/assistant/domain/chat_message.dart';
 import 'package:asisten_keuangan/features/assistant/presentation/widgets/quick_assistant_bar.dart';
+import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
+import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 
 class FakeCameraReceiptService extends CameraReceiptService {
   bool cameraTriggered = false;
@@ -77,11 +79,26 @@ void main() {
 
       final element = tester.element(find.byType(QuickAssistantBar));
       final container = ProviderScope.containerOf(element);
-      final messages = container.read(assistantProvider).messages;
+      final state = container.read(assistantProvider);
 
+      final userMsg = state.messages
+          .where((m) => m.sender == MessageSender.user)
+          .lastOrNull;
+      expect(userMsg?.content, equals('[Foto struk]'));
+
+      final bankerMsgs = state.messages
+          .where((m) => m.sender == MessageSender.banker)
+          .toList();
+      expect(bankerMsgs, isNotEmpty);
       expect(
-        messages.any((m) => m.sender == MessageSender.user && m.content.contains('Struk Belanja')),
-        isTrue,
+        bankerMsgs.last.content,
+        contains('Tidak ada transaksi yang dibukukan'),
+      );
+
+      final txState = container.read(transactionProvider);
+      expect(
+        txState.transactions.any((t) => t.source == TransactionSource.receipt),
+        isFalse,
       );
     });
   });
