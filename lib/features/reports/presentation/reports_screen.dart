@@ -149,6 +149,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   totalExpense: totalExpense,
                   categoryTotals: categoryTotals,
                   isDataLoading: txState.isLoading,
+                  hasNoData: periodTransactions.isEmpty,
                 ),
                 const SizedBox(height: 24),
 
@@ -171,6 +172,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   transactionCount: periodTransactions.length,
                   periodDays: _periodDays(),
                   isDataLoading: txState.isLoading,
+                  hasNoData: periodTransactions.isEmpty,
                 ),
                 const SizedBox(height: 20),
                 _buildExportSection(context, txState.transactions),
@@ -212,6 +214,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required double totalExpense,
     required Map<String, double> categoryTotals,
     required bool isDataLoading,
+    required bool hasNoData,
   }) {
     final aiState = ref.watch(monthlyAiAnalysisProvider);
     final aiResult = aiState.result;
@@ -303,9 +306,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             aiResult?.headline ??
                 (isDataLoading
                     ? 'Memuat data transaksi...'
-                    : (isHealthy
-                        ? 'Struktur Arus Kas Sehat & Stabil'
-                        : 'Peringatan Penyerapan Arus Kas Tinggi')),
+                    : (hasNoData
+                        ? 'Belum Ada Data untuk Dianalisis'
+                        : (isHealthy
+                            ? 'Struktur Arus Kas Sehat & Stabil'
+                            : 'Peringatan Penyerapan Arus Kas Tinggi'))),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -318,9 +323,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             aiResult?.narrative ??
                 (isDataLoading
                     ? 'Ringkasan penasihat akan tersedia setelah data transaksi selesai dimuat.'
-                    : ('Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
-                        'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
-                        '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}')),
+                    : (hasNoData
+                        ? 'Belum ada transaksi pada periode ini. Catat pemasukan atau pengeluaran Anda untuk mendapatkan ringkasan dan rekomendasi penasihat.'
+                        : ('Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
+                            'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
+                            '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}'))),
             style: const TextStyle(
               color: Color(0xFFCBD5E1),
               fontSize: 13,
@@ -597,13 +604,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required int transactionCount,
     required int periodDays,
     required bool isDataLoading,
+    required bool hasNoData,
   }) {
     final liquiditySubtext = isDataLoading
         ? 'Memuat...'
         : (netCashflow > 0
             ? 'Surplus terkelola'
             : (netCashflow < 0 ? 'Defisit - perlu atensi' : 'Netral'));
-    final liquidityGood = isDataLoading
+    final liquidityGood = isDataLoading || hasNoData
         ? null
         : (netCashflow > 0 ? true : (netCashflow < 0 ? false : null));
 
@@ -634,8 +642,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   value: '${savingsRate.toStringAsFixed(1)}%',
                   subtext: isDataLoading
                       ? 'Memuat...'
-                      : (savingsRate >= 30 ? 'Sehat Prima' : 'Perlu Diwaspadai'),
-                  isGood: isDataLoading ? null : savingsRate >= 30,
+                      : (hasNoData
+                          ? 'Belum ada data'
+                          : (savingsRate >= 30
+                              ? 'Sehat Prima'
+                              : 'Perlu Diwaspadai')),
+                  isGood: isDataLoading || hasNoData
+                      ? null
+                      : savingsRate >= 30,
                 ),
               ),
               const SizedBox(width: 12),
