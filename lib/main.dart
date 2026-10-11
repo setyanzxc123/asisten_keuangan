@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:asisten_keuangan/firebase_options.dart';
 import 'package:asisten_keuangan/core/services/firebase_app_check_service.dart';
 import 'package:asisten_keuangan/core/theme/app_theme.dart';
+import 'package:asisten_keuangan/core/theme/theme_mode_provider.dart';
 import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
 
 Future<void> main() async {
@@ -25,17 +26,17 @@ Future<void> main() async {
   );
 }
 
-class AsistenKeuanganApp extends StatelessWidget {
+class AsistenKeuanganApp extends ConsumerWidget {
   const AsistenKeuanganApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Asisten Keuangan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ref.watch(themeModeProvider),
       home: const DashboardScreen(),
     );
   }

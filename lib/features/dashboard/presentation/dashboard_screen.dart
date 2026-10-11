@@ -8,6 +8,7 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 import 'package:asisten_keuangan/features/reports/presentation/widgets/wishlist_section_widget.dart';
+import 'package:asisten_keuangan/features/settings/presentation/settings_screen.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/transaction_history_screen.dart';
 import 'package:asisten_keuangan/features/wishlist/data/wishlist_provider.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
@@ -98,6 +99,18 @@ class DashboardScreen extends ConsumerWidget {
                 },
               );
             },
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SettingsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan',
           ),
           const SizedBox(width: 4),
         ],
