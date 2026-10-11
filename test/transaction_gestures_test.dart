@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
+import 'package:asisten_keuangan/features/transactions/presentation/transaction_history_screen.dart';
 import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
 
 TransactionModel buildSampleTx() {
@@ -79,7 +80,54 @@ void main() {
 
       expect(find.byType(Dismissible), findsWidgets);
       expect(find.text('Mutasi Terakhir'), findsOneWidget);
-      expect(find.text('Geser untuk edit atau hapus'), findsOneWidget);
+      expect(find.text('Geser atau buka menu untuk mengelola'), findsOneWidget);
+      expect(find.text('Lihat Semua Transaksi'), findsOneWidget);
+    });
+
+    testWidgets('renders row overflow menu as swipe alternative',
+        (WidgetTester tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(transactionProvider.notifier)
+          .addTransaction(buildSampleTx());
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: DashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Aksi transaksi'), findsOneWidget);
+    });
+  });
+
+  group('Transaction history screen tests', () {
+    testWidgets('renders search field, month filter, and rows', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(transactionProvider.notifier)
+          .addTransaction(buildSampleTx());
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: TransactionHistoryScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Semua Transaksi'), findsOneWidget);
+      expect(find.text('Cari judul atau kategori...'), findsOneWidget);
+      expect(find.text('Kopi Pagi'), findsOneWidget);
+      expect(find.byTooltip('Aksi transaksi'), findsOneWidget);
     });
   });
 }

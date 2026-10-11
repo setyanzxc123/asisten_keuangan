@@ -41,6 +41,22 @@ class _ManualTransactionBottomSheetState
   TransactionType _selectedType = TransactionType.expense;
   String _selectedCategory = 'Makanan & Minuman';
   String _selectedPaymentMethod = 'QRIS';
+  DateTime _selectedDate = DateTime.now();
+
+  static const _monthLabels = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
 
   final List<String> _expenseCategories = [
     'Makanan & Minuman',
@@ -79,6 +95,7 @@ class _ManualTransactionBottomSheetState
       _selectedType = initial.type;
       _selectedCategory = initial.category;
       _selectedPaymentMethod = initial.paymentMethod;
+      _selectedDate = initial.date;
     }
   }
 
@@ -117,6 +134,7 @@ class _ManualTransactionBottomSheetState
         type: _selectedType,
         category: _selectedCategory,
         paymentMethod: _selectedPaymentMethod,
+        date: _selectedDate,
       );
       ref.read(transactionProvider.notifier).updateTransaction(updated);
       Navigator.pop(context);
@@ -135,7 +153,7 @@ class _ManualTransactionBottomSheetState
         type: _selectedType,
         category: _selectedCategory,
         paymentMethod: _selectedPaymentMethod,
-        date: DateTime.now(),
+        date: _selectedDate,
         source: TransactionSource.text,
       );
 
@@ -148,6 +166,26 @@ class _ManualTransactionBottomSheetState
           backgroundColor: AppTheme.accentEmerald,
         ),
       );
+    }
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _selectedDate.hour,
+          _selectedDate.minute,
+        );
+      });
     }
   }
 
@@ -300,6 +338,51 @@ class _ManualTransactionBottomSheetState
                   hintText: 'Contoh: Nasi Padang, Bensin, Gaji Pokok',
                   border: InputBorder.none,
                   hintStyle: TextStyle(fontSize: 13, color: AppTheme.textSecondaryOf(context)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Tanggal Transaksi
+            Text(
+              'Tanggal Transaksi',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondaryOf(context)),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => _pickDate(context),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppTheme.fillOf(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.borderOf(context)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: AppTheme.textSecondaryOf(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${_selectedDate.day} ${_monthLabels[_selectedDate.month - 1]} ${_selectedDate.year}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimaryOf(context),
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.edit_calendar_rounded,
+                      size: 16,
+                      color: AppTheme.textSecondaryOf(context),
+                    ),
+                  ],
                 ),
               ),
             ),

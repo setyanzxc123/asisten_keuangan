@@ -8,6 +8,7 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 import 'package:asisten_keuangan/features/reports/presentation/widgets/wishlist_section_widget.dart';
+import 'package:asisten_keuangan/features/transactions/presentation/transaction_history_screen.dart';
 import 'package:asisten_keuangan/features/wishlist/data/wishlist_provider.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 import 'package:asisten_keuangan/core/services/biometric_service.dart';
@@ -156,29 +157,32 @@ class DashboardScreen extends ConsumerWidget {
                 const WishlistSectionWidget(),
                 const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Mutasi Terakhir',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimaryOf(context),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mutasi Terakhir',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimaryOf(context),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Geser untuk edit atau hapus',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondaryOf(context),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Geser atau buka menu untuk mengelola',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondaryOf(context),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () =>
                           ManualTransactionBottomSheet.show(context),
@@ -205,7 +209,7 @@ class DashboardScreen extends ConsumerWidget {
                   _buildLoadingState(context)
                 else if (txState.transactions.isEmpty)
                   _buildEmptyState(context, ref)
-                else
+                else ...[
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -218,6 +222,37 @@ class DashboardScreen extends ConsumerWidget {
                       return _buildTransactionItem(context, ref, tx);
                     },
                   ),
+                  if (txState.transactions.isNotEmpty)
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const TransactionHistoryScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.history_rounded, size: 16),
+                        label: Text(
+                          txState.transactions.length > 15
+                              ? 'Lihat Semua (${txState.transactions.length} transaksi)'
+                              : 'Lihat Semua Transaksi',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.textSecondaryOf(context),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
@@ -548,57 +583,13 @@ class DashboardScreen extends ConsumerWidget {
           );
           return false;
         } else if (direction == DismissDirection.endToStart) {
-          return await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'Hapus Transaksi',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              content: Text('Apakah Anda yakin ingin menghapus "${tx.title}"?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentRose,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Hapus'),
-                ),
-              ],
-            ),
-          ) ?? false;
+          return await _confirmDelete(context, tx) ?? false;
         }
         return false;
       },
       onDismissed: (direction) {
         if (direction == DismissDirection.endToStart) {
-          ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Transaksi "${tx.title}" dihapus'),
-              action: SnackBarAction(
-                label: 'Urungkan',
-                textColor: AppTheme.accentGold,
-                onPressed: () {
-                  ref.read(transactionProvider.notifier).addTransaction(tx);
-                },
-              ),
-            ),
-          );
+          _deleteTransaction(context, ref, tx);
         }
       },
       child: InkWell(
@@ -672,11 +663,116 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: isExpense ? AppTheme.accentRose : AppTheme.accentEmeraldText,
+                  color: isExpense
+                      ? AppTheme.accentRose
+                      : (AppTheme.isDark(context)
+                          ? AppTheme.accentEmerald
+                          : AppTheme.accentEmeraldText),
                 ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  size: 20,
+                  color: AppTheme.textSecondaryOf(context),
+                ),
+                tooltip: 'Aksi transaksi',
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (action) {
+                  if (action == 'edit') {
+                    ManualTransactionBottomSheet.show(
+                      context,
+                      initialTransaction: tx,
+                    );
+                  } else if (action == 'delete') {
+                    _confirmDelete(context, tx).then((confirmed) {
+                      if (confirmed != true || !context.mounted) return;
+                      _deleteTransaction(context, ref, tx);
+                    });
+                  }
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(
+                    value: 'edit',
+                    height: 44,
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, size: 18),
+                        SizedBox(width: 10),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    height: 44,
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 18),
+                        SizedBox(width: 10),
+                        Text('Hapus'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context, TransactionModel tx) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Hapus Transaksi',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        content: Text('Apakah Anda yakin ingin menghapus "${tx.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textSecondaryOf(context)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentRose,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteTransaction(BuildContext context, WidgetRef ref, TransactionModel tx) {
+    ref.read(transactionProvider.notifier).deleteTransaction(tx.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Transaksi "${tx.title}" dihapus'),
+        action: SnackBarAction(
+          label: 'Urungkan',
+          textColor: AppTheme.accentGold,
+          onPressed: () {
+            ref.read(transactionProvider.notifier).addTransaction(tx);
+          },
         ),
       ),
     );
