@@ -119,12 +119,7 @@ class WishlistSectionWidget extends ConsumerWidget {
                     ? 'Tandai belum tercapai'
                     : 'Tandai target tercapai',
                 child: InkWell(
-                  onTap: () {
-                    ref.read(wishlistProvider.notifier).toggleAchieved(item.id);
-                    ref
-                        .read(monthlyAiAnalysisProvider.notifier)
-                        .generateAnalysis();
-                  },
+                  onTap: () => _handleToggleAchieved(context, ref, item),
                   borderRadius: BorderRadius.circular(22),
                   child: Padding(
                     padding: const EdgeInsets.all(11),
@@ -227,6 +222,51 @@ class WishlistSectionWidget extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _handleToggleAchieved(
+    BuildContext context,
+    WidgetRef ref,
+    WishlistModel item,
+  ) {
+    void toggle() {
+      ref.read(wishlistProvider.notifier).toggleAchieved(item.id);
+      ref.read(monthlyAiAnalysisProvider.notifier).generateAnalysis();
+    }
+
+    if (!item.isAchieved && item.remainingAmount > 0) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Tandai Tercapai?'),
+          content: Text(
+            'Dana "${item.title}" belum lengkap. Masih kurang ${CurrencyFormatter.format(item.remainingAmount)}. Tandai target ini sebagai tercapai?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                toggle();
+              },
+              child: const Text(
+                'Tandai Tercapai',
+                style: TextStyle(
+                  color: AppTheme.accentEmeraldText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    toggle();
   }
 
   void _confirmDeleteWishlist(

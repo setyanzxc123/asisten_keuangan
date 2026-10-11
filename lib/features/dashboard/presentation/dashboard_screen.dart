@@ -62,44 +62,39 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               );
             },
-            icon: const Badge(
-              smallSize: 8,
-              backgroundColor: AppTheme.accentEmerald,
-              child: Icon(Icons.forum_outlined),
-            ),
+            icon: const Icon(Icons.forum_outlined),
             tooltip: 'Ruang Konsultasi Asisten',
           ),
-          IconButton(
-            tooltip: 'Kunci Biometrik',
-            icon: const Icon(Icons.fingerprint_rounded),
-            onPressed: () async {
-              final bioService = ref.read(biometricServiceProvider);
-              final isAvailable = await bioService.isBiometricAvailable();
-              if (!context.mounted) return;
-
-              if (!isAvailable) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Sensor biometrik tidak aktif atau tidak didukung di perangkat ini.',
-                    ),
-                    backgroundColor: AppTheme.accentRose,
-                  ),
-                );
-                return;
+          FutureBuilder<bool>(
+            future: ref.read(biometricServiceProvider).isBiometricAvailable(),
+            builder: (context, snapshot) {
+              if (snapshot.data != true) {
+                return const SizedBox.shrink();
               }
+              return IconButton(
+                tooltip: 'Verifikasi Biometrik',
+                icon: const Icon(Icons.fingerprint_rounded),
+                onPressed: () async {
+                  final bioService = ref.read(biometricServiceProvider);
+                  final success = await bioService.authenticate();
+                  if (!context.mounted) return;
 
-              final success = await bioService.authenticate();
-              if (!context.mounted) return;
-
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Verifikasi biometrik berhasil.'),
-                    backgroundColor: AppTheme.accentEmerald,
-                  ),
-                );
-              }
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Verifikasi biometrik berhasil.'),
+                        backgroundColor: AppTheme.accentEmerald,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Verifikasi biometrik tidak berhasil.'),
+                      ),
+                    );
+                  }
+                },
+              );
             },
           ),
           const SizedBox(width: 4),

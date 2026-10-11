@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/core/services/financial_functions_service.dart';
+import 'package:asisten_keuangan/core/utils/currency_formatter.dart';
 import 'package:asisten_keuangan/features/assistant/data/assistant_provider.dart';
 import 'package:asisten_keuangan/features/reports/domain/advisory_preference.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
@@ -148,7 +149,7 @@ class MonthlyAiAnalysisNotifier extends Notifier<MonthlyAiAnalysisState> {
             : 'Perlu Pengetatan Pengeluaran Diskresioner';
         narrative =
             'Tingkat tabungan berada pada ${savingsRate.toStringAsFixed(1)}%. '
-            'Untuk mempercepat $activeWishlistsCount target wishlist aktif, disarankan menekan pos belanja impulsif dan mengalihkan minimal Rp ${(netCashflow * 0.4).clamp(0, double.infinity).toStringAsFixed(0)} ke pos tabungan prioritas.';
+            'Untuk mempercepat $activeWishlistsCount target wishlist aktif, disarankan menekan pos belanja impulsif dan mengalihkan minimal ${CurrencyFormatter.format((netCashflow * 0.4).clamp(0.0, double.infinity).toDouble())} ke pos tabungan prioritas.';
         break;
       case AdvisoryStyle.growth:
         headline = 'Peluang Ekspansi & Akumulasi Aset';
@@ -177,7 +178,9 @@ class MonthlyAiAnalysisNotifier extends Notifier<MonthlyAiAnalysisState> {
       headline: headline,
       narrative: narrative,
       portfolioRating: rating,
-      recommendedDailyBudget: (totalExpense / 30).clamp(50000, 1000000),
+      recommendedDailyBudget: totalIncome > totalExpense
+          ? (totalIncome - totalExpense) / 30
+          : totalExpense / 30,
       strategicActionPoints: const [
         'Disiplin pencatatan harian pos pengeluaran',
         'Sisihkan tabungan di awal sebelum belanja sekunder',

@@ -22,6 +22,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _touchedIndex = -1;
   String _selectedPeriod = 'Bulan Ini';
 
+  DateTime _periodStart() {
+    final now = DateTime.now();
+    switch (_selectedPeriod) {
+      case 'Minggu Ini':
+        return now.subtract(const Duration(days: 7));
+      case 'Kuartal Ini':
+        return now.subtract(const Duration(days: 90));
+      default:
+        return DateTime(now.year, now.month);
+    }
+  }
+
+  int _periodDays() {
+    switch (_selectedPeriod) {
+      case 'Minggu Ini':
+        return 7;
+      case 'Kuartal Ini':
+        return 90;
+      default:
+        return DateTime.now().day;
+    }
+  }
+
+  List<TransactionModel> _transactionsForPeriod(
+    List<TransactionModel> all,
+  ) {
+    final start = _periodStart();
+    return all.where((t) => !t.date.isBefore(start)).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,7 +64,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     final txState = ref.watch(transactionProvider);
 
-    final expenses = txState.transactions
+    final periodTransactions = _transactionsForPeriod(txState.transactions);
+    final expenses = periodTransactions
         .where((t) => t.type == TransactionType.expense)
         .toList();
 
@@ -45,15 +76,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           (categoryTotals[tx.category] ?? 0.0) + tx.amount;
     }
 
-    final totalExpense = txState.totalExpense;
-    final totalIncome = txState.totalIncome;
+    final totalExpense = expenses.fold(0.0, (sum, t) => sum + t.amount);
+    final totalIncome = periodTransactions
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final netCashflow = totalIncome - totalExpense;
 
     // Financial Metrics
     final savingsRate = totalIncome > 0
         ? (((totalIncome - totalExpense) / totalIncome) * 100).clamp(0, 100)
         : 0.0;
 
-    final avgDailyExpense = totalExpense / 30;
+    final avgDailyExpense = totalExpense / _periodDays();
 
     return Scaffold(
       appBar: AppBar(
@@ -132,7 +166,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 _buildFinancialRatiosCard(
                   savingsRate: savingsRate.toDouble(),
                   avgDailyExpense: avgDailyExpense,
-                  transactionCount: txState.transactions.length,
+                  netCashflow: netCashflow,
+                  transactionCount: periodTransactions.length,
+                  periodDays: _periodDays(),
                 ),
                 const SizedBox(height: 20),
                 _buildExportSection(context, txState.transactions),
@@ -340,13 +376,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                 ),
                 Text(
-                  CurrencyFormatter.format(
-                    aiResult != null && aiResult.recommendedDailyBudget > 0
-                        ? aiResult.recommendedDailyBudget
-                        : ((totalIncome - totalExpense) > 0
-                            ? (totalIncome - totalExpense) / 30
-                            : 50000),
-                  ),
+                  aiResult != null && aiResult.recommendedDailyBudget > 0
+                      ? CurrencyFormatter.format(aiResult.recommendedDailyBudget)
+                      : (totalIncome - totalExpense) > 0
+                          ? CurrencyFormatter.format(
+                              (totalIncome - totalExpense) / 30)
+                          : 'Menunggu surplus',
                   style: const TextStyle(
                     color: AppTheme.accentEmerald,
                     fontWeight: FontWeight.w800,
@@ -392,9 +427,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       const Color(0xFFEC4899), // Pink (Shopping)
       const Color(0xFF10B981), // Emerald
       const Color(0xFF64748B), // Slate
+      const Color(0xFFEF4444), // Red
+      const Color(0xFF14B8A6), // Teal
+      const Color(0xFFF97316), // Orange
+      const Color(0xFF6366F1), // Indigo
     ];
 
-    final entries = categoryTotals.entries.toList();
+    final entries = categoryTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -544,8 +584,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildFinancialRatiosCard({
     required double savingsRate,
     required double avgDailyExpense,
+    required double netCashflow,
     required int transactionCount,
+    required int periodDays,
   }) {
+    final liquiditySubtext = netCashflow > 0
+        ? 'Surplus terkelola'
+        : (netCashflow < 0 ? 'Defisit - perlu atensi' : 'Netral');
+    final liquidityGood = netCashflow > 0
+        ? true
+        : (netCashflow < 0 ? false : null);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -580,8 +629,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: _buildMetricTile(
                   label: 'Rata-rata / Hari',
                   value: CurrencyFormatter.formatShort(avgDailyExpense),
-                  subtext: 'Berdasarkan 30 hari',
-                  isGood: true,
+                  subtext: 'Berdasarkan $periodDays hari terakhir',
+                  isGood: null,
                 ),
               ),
             ],
@@ -593,17 +642,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: _buildMetricTile(
                   label: 'Aktivitas Catatan',
                   value: '$transactionCount Transaksi',
-                  subtext: 'Bulan berjalan',
-                  isGood: true,
+                  subtext: 'Periode: $_selectedPeriod',
+                  isGood: null,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildMetricTile(
                   label: 'Likuiditas Kas',
-                  value: 'Positif',
-                  subtext: 'Surplus terkelola',
-                  isGood: true,
+                  value: CurrencyFormatter.formatShort(netCashflow),
+                  subtext: liquiditySubtext,
+                  isGood: liquidityGood,
                 ),
               ),
             ],
@@ -617,8 +666,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required String label,
     required String value,
     required String subtext,
-    required bool isGood,
+    required bool? isGood,
   }) {
+    final subtextColor = isGood == null
+        ? AppTheme.textSecondaryOf(context)
+        : (isGood
+            ? (AppTheme.isDark(context)
+                ? AppTheme.accentEmerald
+                : AppTheme.accentEmeraldText)
+            : AppTheme.accentRose);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -651,7 +708,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isGood ? AppTheme.accentEmerald : AppTheme.accentRose,
+              color: subtextColor,
             ),
           ),
         ],
