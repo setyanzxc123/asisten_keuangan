@@ -154,7 +154,17 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(transactionProvider.notifier);
-      final initialTx = container.read(transactionProvider).transactions.first;
+      final initialTx = TransactionModel(
+        id: 'tx_sync_delete',
+        title: 'Langganan Bulanan',
+        amount: 150000,
+        type: TransactionType.expense,
+        category: 'Tagihan & Utilitas',
+        paymentMethod: 'Kartu Kredit',
+        date: DateTime.now(),
+        source: TransactionSource.text,
+      );
+      notifier.addTransaction(initialTx);
 
       notifier.deleteTransaction(initialTx.id);
 

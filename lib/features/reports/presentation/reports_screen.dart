@@ -148,6 +148,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   totalIncome: totalIncome,
                   totalExpense: totalExpense,
                   categoryTotals: categoryTotals,
+                  isDataLoading: txState.isLoading,
                 ),
                 const SizedBox(height: 24),
 
@@ -169,6 +170,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   netCashflow: netCashflow,
                   transactionCount: periodTransactions.length,
                   periodDays: _periodDays(),
+                  isDataLoading: txState.isLoading,
                 ),
                 const SizedBox(height: 20),
                 _buildExportSection(context, txState.transactions),
@@ -209,6 +211,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required double totalIncome,
     required double totalExpense,
     required Map<String, double> categoryTotals,
+    required bool isDataLoading,
   }) {
     final aiState = ref.watch(monthlyAiAnalysisProvider);
     final aiResult = aiState.result;
@@ -298,9 +301,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 16),
           Text(
             aiResult?.headline ??
-                (isHealthy
-                    ? 'Struktur Arus Kas Sehat & Stabil'
-                    : 'Peringatan Penyerapan Arus Kas Tinggi'),
+                (isDataLoading
+                    ? 'Memuat data transaksi...'
+                    : (isHealthy
+                        ? 'Struktur Arus Kas Sehat & Stabil'
+                        : 'Peringatan Penyerapan Arus Kas Tinggi')),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -311,9 +316,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 8),
           Text(
             aiResult?.narrative ??
-                ('Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
-                    'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
-                    '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}'),
+                (isDataLoading
+                    ? 'Ringkasan penasihat akan tersedia setelah data transaksi selesai dimuat.'
+                    : ('Rasio tabungan (*Savings Rate*) Anda saat ini berada di ${savingsRate.toStringAsFixed(1)}%. '
+                        'Pos pengeluaran terbesar dialokasikan pada "$topCategory" senilai ${CurrencyFormatter.format(topCategoryAmount)}. '
+                        '${isHealthy ? "Disiplin alokasi anggaran berada dalam koridor target surplus akhir bulan." : "Disarankan menahan belanja diskresioner untuk menjaga likuiditas darurat."}')),
             style: const TextStyle(
               color: Color(0xFFCBD5E1),
               fontSize: 13,
@@ -376,12 +383,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                 ),
                 Text(
-                  aiResult != null && aiResult.recommendedDailyBudget > 0
-                      ? CurrencyFormatter.format(aiResult.recommendedDailyBudget)
-                      : (totalIncome - totalExpense) > 0
-                          ? CurrencyFormatter.format(
-                              (totalIncome - totalExpense) / 30)
-                          : 'Menunggu surplus',
+                  isDataLoading
+                      ? 'Memuat...'
+                      : (aiResult != null && aiResult.recommendedDailyBudget > 0
+                          ? CurrencyFormatter.format(aiResult.recommendedDailyBudget)
+                          : (totalIncome - totalExpense) > 0
+                              ? CurrencyFormatter.format(
+                                  (totalIncome - totalExpense) / 30)
+                              : 'Menunggu surplus'),
                   style: const TextStyle(
                     color: AppTheme.accentEmerald,
                     fontWeight: FontWeight.w800,
@@ -587,13 +596,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required double netCashflow,
     required int transactionCount,
     required int periodDays,
+    required bool isDataLoading,
   }) {
-    final liquiditySubtext = netCashflow > 0
-        ? 'Surplus terkelola'
-        : (netCashflow < 0 ? 'Defisit - perlu atensi' : 'Netral');
-    final liquidityGood = netCashflow > 0
-        ? true
-        : (netCashflow < 0 ? false : null);
+    final liquiditySubtext = isDataLoading
+        ? 'Memuat...'
+        : (netCashflow > 0
+            ? 'Surplus terkelola'
+            : (netCashflow < 0 ? 'Defisit - perlu atensi' : 'Netral'));
+    final liquidityGood = isDataLoading
+        ? null
+        : (netCashflow > 0 ? true : (netCashflow < 0 ? false : null));
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -620,8 +632,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: _buildMetricTile(
                   label: 'Rasio Tabungan',
                   value: '${savingsRate.toStringAsFixed(1)}%',
-                  subtext: savingsRate >= 30 ? 'Sehat Prima' : 'Perlu Diwaspadai',
-                  isGood: savingsRate >= 30,
+                  subtext: isDataLoading
+                      ? 'Memuat...'
+                      : (savingsRate >= 30 ? 'Sehat Prima' : 'Perlu Diwaspadai'),
+                  isGood: isDataLoading ? null : savingsRate >= 30,
                 ),
               ),
               const SizedBox(width: 12),

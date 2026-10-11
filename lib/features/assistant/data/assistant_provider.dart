@@ -49,7 +49,7 @@ class AssistantNotifier extends Notifier<AssistantState> {
           id: 'init_banker_welcome',
           sender: MessageSender.banker,
           content:
-              'Selamat datang. Saya asisten penasihat keuangan pribadi Anda. Anda dapat mendiktekan catatan transaksi, mengirimkan foto struk, atau memasukkan teks langsung. Saya akan mengelola pencatatan dan memantau rasio likuiditas Anda.',
+              'Selamat datang. Saya asisten penasihat keuangan pribadi Anda. Anda dapat mendiktekan catatan transaksi, mengirimkan foto struk, atau memasukkan teks langsung. Saya akan mengelola pencatatan dan memantau rasio likuiditas Anda.\n\nCatatan: percakapan di sesi ini bersifat sementara dan akan kosong saat aplikasi dibuka ulang. Seluruh transaksi yang Anda catat tetap tersimpan permanen.',
           timestamp: DateTime.now(),
           status: MessageStatus.normal,
         ),

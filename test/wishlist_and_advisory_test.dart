@@ -59,7 +59,7 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(wishlistProvider.notifier);
-      expect(container.read(wishlistProvider).items.isNotEmpty, isTrue);
+      expect(container.read(wishlistProvider).items, isEmpty);
 
       await notifier.addWishlistItem(
         title: 'Monitor 4K',
@@ -143,9 +143,14 @@ void main() {
     });
 
     testWidgets('WishlistSectionWidget renders target items and action buttons', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(wishlistProvider.notifier).loadSampleData();
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
                 child: WishlistSectionWidget(),
@@ -154,6 +159,7 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('TARGET IMPIAN & WISHLIST'), findsOneWidget);
       expect(find.text('Tambah'), findsOneWidget);

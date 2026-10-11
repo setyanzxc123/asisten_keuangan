@@ -8,6 +8,7 @@ import 'package:asisten_keuangan/features/transactions/data/transaction_provider
 import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/reports/presentation/reports_screen.dart';
 import 'package:asisten_keuangan/features/reports/presentation/widgets/wishlist_section_widget.dart';
+import 'package:asisten_keuangan/features/wishlist/data/wishlist_provider.dart';
 import 'package:asisten_keuangan/features/transactions/presentation/manual_transaction_bottom_sheet.dart';
 import 'package:asisten_keuangan/core/services/biometric_service.dart';
 import 'package:asisten_keuangan/core/services/network_connectivity_service.dart';
@@ -140,7 +141,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                 // 1. Executive Cashflow Card
-                _buildCashflowCard(txState),
+                _buildCashflowCard(context, txState),
                 const SizedBox(height: 16),
 
                 // 2. Budget Absorption Gauge Card
@@ -200,8 +201,10 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (txState.transactions.isEmpty)
-                  _buildEmptyState(context)
+                if (txState.isLoading)
+                  _buildLoadingState(context)
+                else if (txState.transactions.isEmpty)
+                  _buildEmptyState(context, ref)
                 else
                   ListView.separated(
                     shrinkWrap: true,
@@ -247,7 +250,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCashflowCard(TransactionState state) {
+  Widget _buildCashflowCard(BuildContext context, TransactionState state) {
     return Semantics(
       container: true,
       label:
@@ -299,7 +302,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              CurrencyFormatter.format(state.netCashflow),
+              state.isLoading ? 'Memuat...' : CurrencyFormatter.format(state.netCashflow),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 28,
@@ -312,8 +315,11 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _buildFlowItem(
+                    context: context,
                     label: 'Pemasukan',
-                    amount: state.totalIncome,
+                    valueText: state.isLoading
+                        ? '—'
+                        : CurrencyFormatter.formatShort(state.totalIncome),
                     color: AppTheme.accentEmerald,
                     icon: Icons.arrow_downward_rounded,
                   ),
@@ -325,8 +331,11 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 Expanded(
                   child: _buildFlowItem(
+                    context: context,
                     label: 'Pengeluaran',
-                    amount: state.totalExpense,
+                    valueText: state.isLoading
+                        ? '—'
+                        : CurrencyFormatter.formatShort(state.totalExpense),
                     color: AppTheme.accentRose,
                     icon: Icons.arrow_upward_rounded,
                   ),
@@ -340,8 +349,9 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildFlowItem({
+    required BuildContext context,
     required String label,
-    required double amount,
+    required String valueText,
     required Color color,
     required IconData icon,
   }) {
@@ -367,7 +377,7 @@ class DashboardScreen extends ConsumerWidget {
                   style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
                 ),
                 Text(
-                  CurrencyFormatter.formatShort(amount),
+                  valueText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -390,6 +400,7 @@ class DashboardScreen extends ConsumerWidget {
     final percentage = (state.budgetUsedPercentage * 100).toInt();
     final isWarning = percentage >= 80;
     final isDanger = percentage >= 100;
+    final isLoading = state.isLoading;
 
     final progressColor = isDanger
         ? AppTheme.accentRose
@@ -421,11 +432,13 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '$percentage% Terpakai',
+                  isLoading ? 'Memuat...' : '$percentage% Terpakai',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: progressColor,
+                    color: isLoading
+                        ? AppTheme.textSecondaryOf(context)
+                        : progressColor,
                   ),
                 ),
               ],
@@ -434,10 +447,12 @@ class DashboardScreen extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
-                value: state.budgetUsedPercentage,
+                value: isLoading ? null : state.budgetUsedPercentage,
                 minHeight: 10,
                 backgroundColor: AppTheme.trackOf(context),
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isLoading ? AppTheme.textSecondaryOf(context) : progressColor,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -445,7 +460,9 @@ class DashboardScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
+                  isLoading
+                      ? 'Memuat data anggaran...'
+                      : 'Sisa: ${CurrencyFormatter.format(state.remainingBudget)}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -453,7 +470,9 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
+                  isLoading
+                      ? ''
+                      : 'Target: ${CurrencyFormatter.format(state.monthlyBudget)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textSecondaryOf(context),
@@ -772,17 +791,86 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: AppTheme.cardOf(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderOf(context)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 36,
+            color: AppTheme.textSecondaryOf(context),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Belum ada transaksi tercatat',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimaryOf(context),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Dikte lewat bar asisten di bawah, unggah foto struk, atau gunakan input manual.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondaryOf(context),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () {
+              ref.read(transactionProvider.notifier).loadSampleData();
+              ref.read(wishlistProvider.notifier).loadSampleData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Contoh data dimuat. Semua data contoh dapat dihapus kapan saja.',
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.auto_stories_outlined, size: 18),
+            label: const Text('Coba Contoh Data'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.accentPrimaryOf(context),
+              side: BorderSide(color: AppTheme.accentPrimaryOf(context)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
       alignment: Alignment.center,
-      child: Text(
-        'Belum ada transaksi. Coba diktekan pada bar asisten di bawah.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppTheme.textSecondaryOf(context),
-          fontSize: 13,
-        ),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(strokeWidth: 2),
+          const SizedBox(height: 12),
+          Text(
+            'Memuat data portofolio...',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondaryOf(context),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,7 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:asisten_keuangan/features/transactions/data/transaction_provider.dart';
+import 'package:asisten_keuangan/features/transactions/domain/transaction_model.dart';
 import 'package:asisten_keuangan/features/dashboard/presentation/dashboard_screen.dart';
+
+TransactionModel buildSampleTx() {
+  return TransactionModel(
+    id: 'tx-test-1',
+    title: 'Kopi Pagi',
+    amount: 20000,
+    type: TransactionType.expense,
+    category: 'Makanan & Minuman',
+    paymentMethod: 'QRIS',
+    date: DateTime.now(),
+    source: TransactionSource.text,
+  );
+}
 
 void main() {
   group('TransactionNotifier mutation tests', () {
@@ -10,14 +24,14 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final initialList = container.read(transactionProvider).transactions;
-      final target = initialList.first;
-      final updated = target.copyWith(title: 'Updated Title', amount: 99999);
+      final sample = buildSampleTx();
+      container.read(transactionProvider.notifier).addTransaction(sample);
+      final updated = sample.copyWith(title: 'Updated Title', amount: 99999);
 
       container.read(transactionProvider.notifier).updateTransaction(updated);
 
       final state = container.read(transactionProvider);
-      final found = state.transactions.firstWhere((t) => t.id == target.id);
+      final found = state.transactions.firstWhere((t) => t.id == sample.id);
       expect(found.title, equals('Updated Title'));
       expect(found.amount, equals(99999));
     });
@@ -26,22 +40,37 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final initialList = container.read(transactionProvider).transactions;
-      final target = initialList.first;
+      final sample = buildSampleTx();
+      container.read(transactionProvider.notifier).addTransaction(sample);
 
-      container.read(transactionProvider.notifier).deleteTransaction(target.id);
+      container.read(transactionProvider.notifier).deleteTransaction(sample.id);
 
       final state = container.read(transactionProvider);
-      expect(state.transactions.any((t) => t.id == target.id), isFalse);
+      expect(state.transactions.any((t) => t.id == sample.id), isFalse);
+    });
+
+    test('starts in loading state and exposes empty data without seed', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final state = container.read(transactionProvider);
+      expect(state.transactions, isEmpty);
     });
   });
 
   group('Dashboard transaction card gestures tests', () {
     testWidgets('renders Dismissible with swipe backgrounds for each transaction',
         (WidgetTester tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(transactionProvider.notifier)
+          .addTransaction(buildSampleTx());
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: DashboardScreen(),
           ),
         ),

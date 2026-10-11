@@ -39,6 +39,7 @@ class WishlistState {
 class WishlistNotifier extends Notifier<WishlistState> {
   final _uuid = const Uuid();
   StreamSubscription<List<WishlistModel>>? _subscription;
+  String? _userId;
 
   @override
   WishlistState build() {
@@ -46,50 +47,93 @@ class WishlistNotifier extends Notifier<WishlistState> {
       _subscription?.cancel();
     });
 
-    _initRepositorySync();
+    final userAsync = ref.watch(currentUserIdProvider);
+    final userId = userAsync.value ?? 'local_offline_user';
 
-    if (stateOrNull != null) {
-      return stateOrNull!;
+    final previous = stateOrNull;
+    final sameUser = previous != null && _userId == userId;
+    _userId = userId;
+
+    if (sameUser) {
+      _initRepositorySync();
+      return previous;
     }
 
-    return _buildInitialState();
-  }
+    _initRepositorySync();
 
-  WishlistState _buildInitialState() {
-    final now = DateTime.now();
-    return WishlistState(
-      items: [
-        WishlistModel(
-          id: 'default-wishlist-1',
-          title: 'Dana Darurat 3 Bulan',
-          targetAmount: 15000000,
-          savedAmount: 9000000,
-          targetDate: now.add(const Duration(days: 90)),
-          createdAt: now.subtract(const Duration(days: 30)),
-        ),
-        WishlistModel(
-          id: 'default-wishlist-2',
-          title: 'Upgrade Laptop Kerja',
-          targetAmount: 20000000,
-          savedAmount: 5000000,
-          targetDate: now.add(const Duration(days: 180)),
-          createdAt: now.subtract(const Duration(days: 15)),
-        ),
-      ],
-    );
+    return const WishlistState(items: [], isLoading: true);
   }
 
   void _initRepositorySync() {
     final repo = ref.read(wishlistRepositoryProvider);
     final userAsync = ref.watch(currentUserIdProvider);
-    final userId = userAsync.value ?? 'local_user';
+    final userId = userAsync.value ?? 'local_offline_user';
 
     _subscription?.cancel();
-    _subscription = repo.watchWishlist(userId).listen((cloudItems) {
-      if (cloudItems.isNotEmpty) {
-        state = state.copyWith(items: cloudItems, isLoading: false);
-      }
-    });
+    _subscription = repo.watchWishlist(userId).listen(
+      (cloudItems) {
+        if (!ref.mounted) return;
+        _mergeCloudItems(cloudItems);
+      },
+      onError: (_) {
+        if (ref.mounted) state = state.copyWith(isLoading: false);
+      },
+      onDone: () {
+        // Backend without an active stream (uninitialized Firestore) emits
+        // nothing; resolve the loading state instead of waiting forever.
+        if (ref.mounted) state = state.copyWith(isLoading: false);
+      },
+    );
+  }
+
+  void _mergeCloudItems(List<WishlistModel> cloudItems) {
+    final cloudIds = cloudItems.map((i) => i.id).toSet();
+    final localOnly = state.items
+        .where((i) => !cloudIds.contains(i.id))
+        .toList();
+    state = state.copyWith(
+      items: [...cloudItems, ...localOnly],
+      isLoading: false,
+    );
+  }
+
+  void loadSampleData() {
+    final now = DateTime.now();
+    final samples = [
+      WishlistModel(
+        id: 'sample-wishlist-1',
+        title: 'Dana Darurat 3 Bulan',
+        targetAmount: 15000000,
+        savedAmount: 9000000,
+        targetDate: now.add(const Duration(days: 90)),
+        createdAt: now,
+      ),
+      WishlistModel(
+        id: 'sample-wishlist-2',
+        title: 'Upgrade Laptop Kerja',
+        targetAmount: 20000000,
+        savedAmount: 5000000,
+        targetDate: now.add(const Duration(days: 180)),
+        createdAt: now,
+      ),
+    ];
+
+    final existingIds = state.items.map((i) => i.id).toSet();
+    final newSamples = samples
+        .where((s) => !existingIds.contains(s.id))
+        .toList();
+    if (newSamples.isEmpty) return;
+
+    state = state.copyWith(
+      items: [...newSamples, ...state.items],
+      isLoading: false,
+    );
+
+    final repo = ref.read(wishlistRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider).value ?? 'local_offline_user';
+    for (final item in newSamples) {
+      repo.saveWishlistItem(userId, item);
+    }
   }
 
   Future<void> addWishlistItem({
@@ -108,10 +152,10 @@ class WishlistNotifier extends Notifier<WishlistState> {
     );
 
     final updated = [newItem, ...state.items];
-    state = state.copyWith(items: updated);
+    state = state.copyWith(items: updated, isLoading: false);
 
     final repo = ref.read(wishlistRepositoryProvider);
-    final userId = ref.read(currentUserIdProvider).value ?? 'local_user';
+    final userId = ref.read(currentUserIdProvider).value ?? 'local_offline_user';
     await repo.saveWishlistItem(userId, newItem);
   }
 
@@ -130,7 +174,7 @@ class WishlistNotifier extends Notifier<WishlistState> {
         );
 
         final repo = ref.read(wishlistRepositoryProvider);
-        final userId = ref.read(currentUserIdProvider).value ?? 'local_user';
+        final userId = ref.read(currentUserIdProvider).value ?? 'local_offline_user';
         repo.updateWishlistItem(userId, updatedItem);
 
         return updatedItem;
@@ -147,7 +191,7 @@ class WishlistNotifier extends Notifier<WishlistState> {
         final updatedItem = item.copyWith(isAchieved: !item.isAchieved);
 
         final repo = ref.read(wishlistRepositoryProvider);
-        final userId = ref.read(currentUserIdProvider).value ?? 'local_user';
+        final userId = ref.read(currentUserIdProvider).value ?? 'local_offline_user';
         repo.updateWishlistItem(userId, updatedItem);
 
         return updatedItem;
@@ -163,7 +207,7 @@ class WishlistNotifier extends Notifier<WishlistState> {
     state = state.copyWith(items: updated);
 
     final repo = ref.read(wishlistRepositoryProvider);
-    final userId = ref.read(currentUserIdProvider).value ?? 'local_user';
+    final userId = ref.read(currentUserIdProvider).value ?? 'local_offline_user';
     await repo.deleteWishlistItem(userId, itemId);
   }
 }
